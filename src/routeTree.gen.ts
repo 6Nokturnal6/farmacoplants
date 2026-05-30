@@ -9,38 +9,173 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PlantsIndexRouteImport } from './routes/plants.index'
+import { Route as CompoundsIndexRouteImport } from './routes/compounds.index'
+import { Route as CitationsIndexRouteImport } from './routes/citations.index'
+import { Route as ActivitiesIndexRouteImport } from './routes/activities.index'
+import { Route as PlantsIdRouteImport } from './routes/plants.$id'
+import { Route as CompoundsIdRouteImport } from './routes/compounds.$id'
+import { Route as ActivitiesIdRouteImport } from './routes/activities.$id'
 
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlantsIndexRoute = PlantsIndexRouteImport.update({
+  id: '/plants/',
+  path: '/plants/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompoundsIndexRoute = CompoundsIndexRouteImport.update({
+  id: '/compounds/',
+  path: '/compounds/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CitationsIndexRoute = CitationsIndexRouteImport.update({
+  id: '/citations/',
+  path: '/citations/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ActivitiesIndexRoute = ActivitiesIndexRouteImport.update({
+  id: '/activities/',
+  path: '/activities/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlantsIdRoute = PlantsIdRouteImport.update({
+  id: '/plants/$id',
+  path: '/plants/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompoundsIdRoute = CompoundsIdRouteImport.update({
+  id: '/compounds/$id',
+  path: '/compounds/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ActivitiesIdRoute = ActivitiesIdRouteImport.update({
+  id: '/activities/$id',
+  path: '/activities/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/login': typeof LoginRoute
+  '/activities/$id': typeof ActivitiesIdRoute
+  '/compounds/$id': typeof CompoundsIdRoute
+  '/plants/$id': typeof PlantsIdRoute
+  '/activities/': typeof ActivitiesIndexRoute
+  '/citations/': typeof CitationsIndexRoute
+  '/compounds/': typeof CompoundsIndexRoute
+  '/plants/': typeof PlantsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/login': typeof LoginRoute
+  '/activities/$id': typeof ActivitiesIdRoute
+  '/compounds/$id': typeof CompoundsIdRoute
+  '/plants/$id': typeof PlantsIdRoute
+  '/activities': typeof ActivitiesIndexRoute
+  '/citations': typeof CitationsIndexRoute
+  '/compounds': typeof CompoundsIndexRoute
+  '/plants': typeof PlantsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/login': typeof LoginRoute
+  '/activities/$id': typeof ActivitiesIdRoute
+  '/compounds/$id': typeof CompoundsIdRoute
+  '/plants/$id': typeof PlantsIdRoute
+  '/activities/': typeof ActivitiesIndexRoute
+  '/citations/': typeof CitationsIndexRoute
+  '/compounds/': typeof CompoundsIndexRoute
+  '/plants/': typeof PlantsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/login'
+    | '/activities/$id'
+    | '/compounds/$id'
+    | '/plants/$id'
+    | '/activities/'
+    | '/citations/'
+    | '/compounds/'
+    | '/plants/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/admin'
+    | '/login'
+    | '/activities/$id'
+    | '/compounds/$id'
+    | '/plants/$id'
+    | '/activities'
+    | '/citations'
+    | '/compounds'
+    | '/plants'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/login'
+    | '/activities/$id'
+    | '/compounds/$id'
+    | '/plants/$id'
+    | '/activities/'
+    | '/citations/'
+    | '/compounds/'
+    | '/plants/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
+  LoginRoute: typeof LoginRoute
+  ActivitiesIdRoute: typeof ActivitiesIdRoute
+  CompoundsIdRoute: typeof CompoundsIdRoute
+  PlantsIdRoute: typeof PlantsIdRoute
+  ActivitiesIndexRoute: typeof ActivitiesIndexRoute
+  CitationsIndexRoute: typeof CitationsIndexRoute
+  CompoundsIndexRoute: typeof CompoundsIndexRoute
+  PlantsIndexRoute: typeof PlantsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +183,70 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/plants/': {
+      id: '/plants/'
+      path: '/plants'
+      fullPath: '/plants/'
+      preLoaderRoute: typeof PlantsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compounds/': {
+      id: '/compounds/'
+      path: '/compounds'
+      fullPath: '/compounds/'
+      preLoaderRoute: typeof CompoundsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/citations/': {
+      id: '/citations/'
+      path: '/citations'
+      fullPath: '/citations/'
+      preLoaderRoute: typeof CitationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/activities/': {
+      id: '/activities/'
+      path: '/activities'
+      fullPath: '/activities/'
+      preLoaderRoute: typeof ActivitiesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/plants/$id': {
+      id: '/plants/$id'
+      path: '/plants/$id'
+      fullPath: '/plants/$id'
+      preLoaderRoute: typeof PlantsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compounds/$id': {
+      id: '/compounds/$id'
+      path: '/compounds/$id'
+      fullPath: '/compounds/$id'
+      preLoaderRoute: typeof CompoundsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/activities/$id': {
+      id: '/activities/$id'
+      path: '/activities/$id'
+      fullPath: '/activities/$id'
+      preLoaderRoute: typeof ActivitiesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
+  LoginRoute: LoginRoute,
+  ActivitiesIdRoute: ActivitiesIdRoute,
+  CompoundsIdRoute: CompoundsIdRoute,
+  PlantsIdRoute: PlantsIdRoute,
+  ActivitiesIndexRoute: ActivitiesIndexRoute,
+  CitationsIndexRoute: CitationsIndexRoute,
+  CompoundsIndexRoute: CompoundsIndexRoute,
+  PlantsIndexRoute: PlantsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

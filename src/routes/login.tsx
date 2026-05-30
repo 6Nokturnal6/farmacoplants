@@ -1,0 +1,80 @@
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useState, type FormEvent } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Header } from "@/components/site/Header";
+import { Footer } from "@/components/site/Footer";
+import { Leaf } from "lucide-react";
+
+export const Route = createFileRoute("/login")({
+  head: () => ({ meta: [{ title: "Sign in — FarmacoPlants" }] }),
+  component: Login,
+});
+
+function Login() {
+  const navigate = useNavigate();
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      if (mode === "signup") {
+        const { error } = await supabase.auth.signUp({
+          email, password,
+          options: {
+            emailRedirectTo: window.location.origin,
+            data: { display_name: name },
+          },
+        });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      }
+      navigate({ to: "/" });
+    } catch (err: any) {
+      setError(err.message ?? "Auth failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      <main className="flex-1 grid place-items-center px-4 py-12">
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-8">
+            <span className="grid place-items-center h-12 w-12 mx-auto rounded-md bg-primary text-primary-foreground">
+              <Leaf className="h-5 w-5" />
+            </span>
+            <h1 className="font-display text-3xl font-semibold mt-4">{mode === "signin" ? "Sign in" : "Create account"}</h1>
+            <p className="text-sm text-muted-foreground mt-1">Curator access to FarmacoPlants</p>
+          </div>
+          <form onSubmit={submit} className="space-y-3">
+            {mode === "signup" && (
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Display name" className="w-full px-3 py-2 rounded-md border border-border bg-card text-sm" />
+            )}
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="w-full px-3 py-2 rounded-md border border-border bg-card text-sm" />
+            <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="w-full px-3 py-2 rounded-md border border-border bg-card text-sm" />
+            {error && <div className="text-sm text-destructive">{error}</div>}
+            <button disabled={loading} className="w-full py-2 rounded-md bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 disabled:opacity-50">
+              {loading ? "…" : mode === "signin" ? "Sign in" : "Create account"}
+            </button>
+          </form>
+          <button onClick={() => setMode(mode === "signin" ? "signup" : "signin")} className="mt-4 w-full text-sm text-muted-foreground hover:text-primary">
+            {mode === "signin" ? "Need an account? Create one" : "Already have an account? Sign in"}
+          </button>
+          <div className="text-center mt-6"><Link to="/" className="text-xs text-muted-foreground hover:text-foreground">← Back to home</Link></div>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}
