@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
+import { Pencil, Trash2, X } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — FarmacoPlants" }] }),
@@ -42,12 +43,6 @@ function Admin() {
           <div className="max-w-md text-center">
             <h1 className="font-display text-2xl font-semibold">Admin access required</h1>
             <p className="text-sm text-muted-foreground mt-2">Your account ({userId.slice(0, 8)}…) is signed in but does not have the <code className="text-foreground">admin</code> role.</p>
-            <div className="mt-6 rounded-lg border border-border bg-card p-4 text-left text-sm">
-              <div className="font-medium mb-2">Grant yourself admin (run once via the database):</div>
-              <pre className="text-xs bg-secondary/40 p-3 rounded overflow-x-auto">{`INSERT INTO public.user_roles (user_id, role)
-VALUES ('${userId}', 'admin')
-ON CONFLICT DO NOTHING;`}</pre>
-            </div>
           </div>
         </main>
         <Footer />
@@ -56,9 +51,9 @@ ON CONFLICT DO NOTHING;`}</pre>
   }
 
   const tabs: { key: Tab; label: string }[] = [
-    { key: "compound", label: "Compound" },
-    { key: "plant", label: "Plant" },
-    { key: "activity", label: "Activity" },
+    { key: "compound", label: "Compounds" },
+    { key: "plant", label: "Plants" },
+    { key: "activity", label: "Activities" },
     { key: "citation", label: "Citation" },
     { key: "link", label: "Link records" },
   ];
@@ -66,9 +61,9 @@ ON CONFLICT DO NOTHING;`}</pre>
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-1 mx-auto max-w-4xl w-full px-6 py-10">
+      <main className="flex-1 mx-auto max-w-5xl w-full px-6 py-10">
         <h1 className="font-display text-4xl font-semibold">Curation</h1>
-        <p className="text-muted-foreground mt-2">Add new records to the collection.</p>
+        <p className="text-muted-foreground mt-2">Create, edit and delete records.</p>
 
         <div className="mt-6 flex gap-1 border-b border-border">
           {tabs.map((t) => (
@@ -79,9 +74,9 @@ ON CONFLICT DO NOTHING;`}</pre>
         </div>
 
         <div className="mt-6">
-          {tab === "compound" && <CompoundForm userId={userId} />}
-          {tab === "plant" && <PlantForm userId={userId} />}
-          {tab === "activity" && <ActivityForm userId={userId} />}
+          {tab === "compound" && <CompoundsTab userId={userId} />}
+          {tab === "plant" && <PlantsTab userId={userId} />}
+          {tab === "activity" && <ActivitiesTab userId={userId} />}
           {tab === "citation" && <CitationForm userId={userId} />}
           {tab === "link" && <LinkForm />}
         </div>
@@ -91,11 +86,12 @@ ON CONFLICT DO NOTHING;`}</pre>
   );
 }
 
+// ---------- shared bits ----------
+
 function useSubmitStatus() {
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   return { msg, setMsg };
 }
-
 function Field({ label, children, required }: { label: string; children: React.ReactNode; required?: boolean }) {
   return (
     <label className="block">
@@ -110,109 +106,327 @@ function StatusBar({ msg }: { msg: { kind: "ok" | "err"; text: string } | null }
   if (!msg) return null;
   return <div className={"mt-3 text-sm px-3 py-2 rounded " + (msg.kind === "ok" ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive")}>{msg.text}</div>;
 }
-
 function csv(v: string) { return v.split(",").map((s) => s.trim()).filter(Boolean); }
 
-function CompoundForm({ userId }: { userId: string }) {
-  const qc = useQueryClient();
-  const { msg, setMsg } = useSubmitStatus();
-  const [f, setF] = useState({ name: "", iupac_name: "", smiles: "", inchi: "", inchi_key: "", molecular_formula: "", molecular_weight: "", compound_class: "", description: "" });
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    setMsg(null);
-    const { error } = await supabase.from("compounds").insert({
-      name: f.name, iupac_name: f.iupac_name || null, smiles: f.smiles || null, inchi: f.inchi || null, inchi_key: f.inchi_key || null,
-      molecular_formula: f.molecular_formula || null, molecular_weight: f.molecular_weight ? Number(f.molecular_weight) : null,
-      compound_class: f.compound_class || null, description: f.description || null, created_by: userId,
-    });
-    if (error) setMsg({ kind: "err", text: error.message });
-    else {
-      setMsg({ kind: "ok", text: `Added "${f.name}".` });
-      setF({ name: "", iupac_name: "", smiles: "", inchi: "", inchi_key: "", molecular_formula: "", molecular_weight: "", compound_class: "", description: "" });
-      qc.invalidateQueries({ queryKey: ["compounds"] });
-    }
-  };
+function RecordList<T extends { id: string }>({
+  title, rows, isLoading, getLabel, getSub, onEdit, onDelete, editingId,
+}: {
+  title: string;
+  rows: T[] | undefined;
+  isLoading: boolean;
+  getLabel: (r: T) => string;
+  getSub?: (r: T) => string | null;
+  onEdit: (r: T) => void;
+  onDelete: (r: T) => void;
+  editingId?: string | null;
+}) {
   return (
-    <form onSubmit={submit} className="space-y-4">
-      <Field label="Name" required><input required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} className={inputCls} /></Field>
-      <Field label="IUPAC name"><input value={f.iupac_name} onChange={(e) => setF({ ...f, iupac_name: e.target.value })} className={inputCls} /></Field>
-      <Field label="SMILES"><input value={f.smiles} onChange={(e) => setF({ ...f, smiles: e.target.value })} className={inputCls + " font-mono"} placeholder="e.g. CC(=O)Oc1ccccc1C(=O)O" /></Field>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="InChI Key"><input value={f.inchi_key} onChange={(e) => setF({ ...f, inchi_key: e.target.value })} className={inputCls + " font-mono"} /></Field>
-        <Field label="Molecular formula"><input value={f.molecular_formula} onChange={(e) => setF({ ...f, molecular_formula: e.target.value })} className={inputCls + " font-mono"} /></Field>
+    <div className="rounded-lg border border-border bg-card/40">
+      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+        <h3 className="text-sm font-semibold">{title}</h3>
+        <span className="text-xs text-muted-foreground">{rows?.length ?? 0} records</span>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Molecular weight (g/mol)"><input type="number" step="0.001" value={f.molecular_weight} onChange={(e) => setF({ ...f, molecular_weight: e.target.value })} className={inputCls} /></Field>
-        <Field label="Compound class"><input value={f.compound_class} onChange={(e) => setF({ ...f, compound_class: e.target.value })} className={inputCls} placeholder="alkaloid, flavonoid…" /></Field>
+      <div className="max-h-[480px] overflow-y-auto divide-y divide-border">
+        {isLoading && <div className="p-4 text-sm text-muted-foreground">Loading…</div>}
+        {!isLoading && (rows?.length ?? 0) === 0 && <div className="p-4 text-sm text-muted-foreground">No records yet.</div>}
+        {rows?.map((r) => (
+          <div key={r.id} className={"px-4 py-2.5 flex items-center justify-between gap-3 " + (editingId === r.id ? "bg-primary/5" : "")}>
+            <div className="min-w-0">
+              <div className="text-sm font-medium truncate">{getLabel(r)}</div>
+              {getSub?.(r) && <div className="text-xs text-muted-foreground truncate">{getSub(r)}</div>}
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <button onClick={() => onEdit(r)} className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground" title="Edit"><Pencil className="h-3.5 w-3.5" /></button>
+              <button onClick={() => onDelete(r)} className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive" title="Delete"><Trash2 className="h-3.5 w-3.5" /></button>
+            </div>
+          </div>
+        ))}
       </div>
-      <Field label="InChI"><textarea rows={2} value={f.inchi} onChange={(e) => setF({ ...f, inchi: e.target.value })} className={inputCls + " font-mono"} /></Field>
-      <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} className={inputCls} /></Field>
-      <button className="px-5 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90">Add compound</button>
-      <StatusBar msg={msg} />
-    </form>
+    </div>
   );
 }
 
-function PlantForm({ userId }: { userId: string }) {
+async function confirmDelete(label: string, fn: () => Promise<{ error: { message: string } | null }>, onDone: () => void, setMsg: (m: { kind: "ok" | "err"; text: string }) => void) {
+  if (!window.confirm(`Delete "${label}"? This cannot be undone.`)) return;
+  const { error } = await fn();
+  if (error) setMsg({ kind: "err", text: error.message });
+  else { setMsg({ kind: "ok", text: `Deleted "${label}".` }); onDone(); }
+}
+
+// ---------- COMPOUNDS ----------
+
+type CompoundRow = { id: string; name: string; iupac_name: string | null; smiles: string | null; inchi: string | null; inchi_key: string | null; molecular_formula: string | null; molecular_weight: number | null; compound_class: string | null; description: string | null };
+const EMPTY_COMPOUND = { name: "", iupac_name: "", smiles: "", inchi: "", inchi_key: "", molecular_formula: "", molecular_weight: "", compound_class: "", description: "" };
+
+function CompoundsTab({ userId }: { userId: string }) {
   const qc = useQueryClient();
   const { msg, setMsg } = useSubmitStatus();
-  const [f, setF] = useState({ scientific_name: "", family: "", genus: "", common_names: "", local_names: "", geographic_origin: "", habitat: "", plant_parts: "", description: "", image_url: "" });
+  const [editing, setEditing] = useState<CompoundRow | null>(null);
+  const [f, setF] = useState(EMPTY_COMPOUND);
+
+  const list = useQuery({
+    queryKey: ["admin-compounds"],
+    queryFn: async () => (await supabase.from("compounds").select("*").order("name").limit(1000)).data as CompoundRow[] | null,
+  });
+
+  const reset = () => { setEditing(null); setF(EMPTY_COMPOUND); };
+  const startEdit = (r: CompoundRow) => {
+    setEditing(r);
+    setF({
+      name: r.name, iupac_name: r.iupac_name ?? "", smiles: r.smiles ?? "", inchi: r.inchi ?? "", inchi_key: r.inchi_key ?? "",
+      molecular_formula: r.molecular_formula ?? "", molecular_weight: r.molecular_weight?.toString() ?? "",
+      compound_class: r.compound_class ?? "", description: r.description ?? "",
+    });
+    setMsg(null);
+  };
+
   const submit = async (e: FormEvent) => {
     e.preventDefault(); setMsg(null);
-    const { error } = await supabase.from("plants").insert({
+    const payload = {
+      name: f.name, iupac_name: f.iupac_name || null, smiles: f.smiles || null, inchi: f.inchi || null, inchi_key: f.inchi_key || null,
+      molecular_formula: f.molecular_formula || null, molecular_weight: f.molecular_weight ? Number(f.molecular_weight) : null,
+      compound_class: f.compound_class || null, description: f.description || null,
+    };
+    const { error } = editing
+      ? await supabase.from("compounds").update(payload).eq("id", editing.id)
+      : await supabase.from("compounds").insert({ ...payload, created_by: userId });
+    if (error) setMsg({ kind: "err", text: error.message });
+    else {
+      setMsg({ kind: "ok", text: editing ? `Updated "${f.name}".` : `Added "${f.name}".` });
+      reset();
+      qc.invalidateQueries({ queryKey: ["admin-compounds"] });
+      qc.invalidateQueries({ queryKey: ["compounds"] });
+    }
+  };
+
+  const onDelete = (r: CompoundRow) => confirmDelete(
+    r.name,
+    async () => await supabase.from("compounds").delete().eq("id", r.id),
+    () => { qc.invalidateQueries({ queryKey: ["admin-compounds"] }); qc.invalidateQueries({ queryKey: ["compounds"] }); if (editing?.id === r.id) reset(); },
+    setMsg,
+  );
+
+  return (
+    <div className="grid lg:grid-cols-2 gap-6">
+      <form onSubmit={submit} className="space-y-4">
+        <FormHeader title={editing ? "Edit compound" : "New compound"} onCancel={editing ? reset : undefined} />
+        <Field label="Name" required><input required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} className={inputCls} /></Field>
+        <Field label="IUPAC name"><input value={f.iupac_name} onChange={(e) => setF({ ...f, iupac_name: e.target.value })} className={inputCls} /></Field>
+        <Field label="SMILES"><input value={f.smiles} onChange={(e) => setF({ ...f, smiles: e.target.value })} className={inputCls + " font-mono"} placeholder="e.g. CC(=O)Oc1ccccc1C(=O)O" /></Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="InChI Key"><input value={f.inchi_key} onChange={(e) => setF({ ...f, inchi_key: e.target.value })} className={inputCls + " font-mono"} /></Field>
+          <Field label="Molecular formula"><input value={f.molecular_formula} onChange={(e) => setF({ ...f, molecular_formula: e.target.value })} className={inputCls + " font-mono"} /></Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Molecular weight (g/mol)"><input type="number" step="0.001" value={f.molecular_weight} onChange={(e) => setF({ ...f, molecular_weight: e.target.value })} className={inputCls} /></Field>
+          <Field label="Compound class"><input value={f.compound_class} onChange={(e) => setF({ ...f, compound_class: e.target.value })} className={inputCls} placeholder="alkaloid, flavonoid…" /></Field>
+        </div>
+        <Field label="InChI"><textarea rows={2} value={f.inchi} onChange={(e) => setF({ ...f, inchi: e.target.value })} className={inputCls + " font-mono"} /></Field>
+        <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} className={inputCls} /></Field>
+        <SubmitRow editing={!!editing} label="compound" />
+        <StatusBar msg={msg} />
+      </form>
+      <RecordList<CompoundRow>
+        title="All compounds"
+        rows={list.data ?? undefined}
+        isLoading={list.isLoading}
+        getLabel={(r) => r.name}
+        getSub={(r) => r.compound_class || r.molecular_formula || r.smiles}
+        onEdit={startEdit}
+        onDelete={onDelete}
+        editingId={editing?.id}
+      />
+    </div>
+  );
+}
+
+// ---------- PLANTS ----------
+
+type PlantRow = { id: string; scientific_name: string; family: string | null; genus: string | null; common_names: string[] | null; local_names: string[] | null; geographic_origin: string | null; habitat: string | null; plant_parts: string[] | null; description: string | null; image_url: string | null };
+const EMPTY_PLANT = { scientific_name: "", family: "", genus: "", common_names: "", local_names: "", geographic_origin: "", habitat: "", plant_parts: "", description: "", image_url: "" };
+
+function PlantsTab({ userId }: { userId: string }) {
+  const qc = useQueryClient();
+  const { msg, setMsg } = useSubmitStatus();
+  const [editing, setEditing] = useState<PlantRow | null>(null);
+  const [f, setF] = useState(EMPTY_PLANT);
+
+  const list = useQuery({
+    queryKey: ["admin-plants"],
+    queryFn: async () => (await supabase.from("plants").select("*").order("scientific_name").limit(1000)).data as PlantRow[] | null,
+  });
+
+  const reset = () => { setEditing(null); setF(EMPTY_PLANT); };
+  const startEdit = (r: PlantRow) => {
+    setEditing(r);
+    setF({
+      scientific_name: r.scientific_name, family: r.family ?? "", genus: r.genus ?? "",
+      common_names: (r.common_names ?? []).join(", "),
+      local_names: (r.local_names ?? []).join(", "),
+      geographic_origin: r.geographic_origin ?? "", habitat: r.habitat ?? "",
+      plant_parts: (r.plant_parts ?? []).join(", "),
+      description: r.description ?? "", image_url: r.image_url ?? "",
+    });
+    setMsg(null);
+  };
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault(); setMsg(null);
+    const payload = {
       scientific_name: f.scientific_name, family: f.family || null, genus: f.genus || null,
       common_names: f.common_names ? csv(f.common_names) : null,
       local_names: f.local_names ? csv(f.local_names) : null,
       geographic_origin: f.geographic_origin || null, habitat: f.habitat || null,
       plant_parts: f.plant_parts ? csv(f.plant_parts) : null,
-      description: f.description || null, image_url: f.image_url || null, created_by: userId,
-    });
+      description: f.description || null, image_url: f.image_url || null,
+    };
+    const { error } = editing
+      ? await supabase.from("plants").update(payload).eq("id", editing.id)
+      : await supabase.from("plants").insert({ ...payload, created_by: userId });
     if (error) setMsg({ kind: "err", text: error.message });
-    else { setMsg({ kind: "ok", text: `Added "${f.scientific_name}".` }); setF({ scientific_name: "", family: "", genus: "", common_names: "", local_names: "", geographic_origin: "", habitat: "", plant_parts: "", description: "", image_url: "" }); qc.invalidateQueries({ queryKey: ["plants"] }); }
+    else {
+      setMsg({ kind: "ok", text: editing ? `Updated "${f.scientific_name}".` : `Added "${f.scientific_name}".` });
+      reset();
+      qc.invalidateQueries({ queryKey: ["admin-plants"] });
+      qc.invalidateQueries({ queryKey: ["plants"] });
+    }
   };
+
+  const onDelete = (r: PlantRow) => confirmDelete(
+    r.scientific_name,
+    async () => await supabase.from("plants").delete().eq("id", r.id),
+    () => { qc.invalidateQueries({ queryKey: ["admin-plants"] }); qc.invalidateQueries({ queryKey: ["plants"] }); if (editing?.id === r.id) reset(); },
+    setMsg,
+  );
+
   return (
-    <form onSubmit={submit} className="space-y-4">
-      <Field label="Scientific name" required><input required value={f.scientific_name} onChange={(e) => setF({ ...f, scientific_name: e.target.value })} className={inputCls + " italic"} placeholder="Catharanthus roseus" /></Field>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Family"><input value={f.family} onChange={(e) => setF({ ...f, family: e.target.value })} className={inputCls} /></Field>
-        <Field label="Genus"><input value={f.genus} onChange={(e) => setF({ ...f, genus: e.target.value })} className={inputCls} /></Field>
-      </div>
-      <Field label="Common names (comma-separated)"><input value={f.common_names} onChange={(e) => setF({ ...f, common_names: e.target.value })} className={inputCls} /></Field>
-      <Field label="Local names (comma-separated)"><input value={f.local_names} onChange={(e) => setF({ ...f, local_names: e.target.value })} className={inputCls} placeholder="Macua, Emakhuwa…" /></Field>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Geographic origin"><input value={f.geographic_origin} onChange={(e) => setF({ ...f, geographic_origin: e.target.value })} className={inputCls} placeholder="Nampula, Mozambique" /></Field>
-        <Field label="Plant parts (comma-separated)"><input value={f.plant_parts} onChange={(e) => setF({ ...f, plant_parts: e.target.value })} className={inputCls} placeholder="leaves, root, bark" /></Field>
-      </div>
-      <Field label="Habitat"><input value={f.habitat} onChange={(e) => setF({ ...f, habitat: e.target.value })} className={inputCls} /></Field>
-      <Field label="Image URL"><input value={f.image_url} onChange={(e) => setF({ ...f, image_url: e.target.value })} className={inputCls} /></Field>
-      <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} className={inputCls} /></Field>
-      <button className="px-5 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90">Add plant</button>
-      <StatusBar msg={msg} />
-    </form>
+    <div className="grid lg:grid-cols-2 gap-6">
+      <form onSubmit={submit} className="space-y-4">
+        <FormHeader title={editing ? "Edit plant" : "New plant"} onCancel={editing ? reset : undefined} />
+        <Field label="Scientific name" required><input required value={f.scientific_name} onChange={(e) => setF({ ...f, scientific_name: e.target.value })} className={inputCls + " italic"} placeholder="Catharanthus roseus" /></Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Family"><input value={f.family} onChange={(e) => setF({ ...f, family: e.target.value })} className={inputCls} /></Field>
+          <Field label="Genus"><input value={f.genus} onChange={(e) => setF({ ...f, genus: e.target.value })} className={inputCls} /></Field>
+        </div>
+        <Field label="Common names (comma-separated)"><input value={f.common_names} onChange={(e) => setF({ ...f, common_names: e.target.value })} className={inputCls} /></Field>
+        <Field label="Local names (comma-separated)"><input value={f.local_names} onChange={(e) => setF({ ...f, local_names: e.target.value })} className={inputCls} placeholder="Macua, Emakhuwa…" /></Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Geographic origin"><input value={f.geographic_origin} onChange={(e) => setF({ ...f, geographic_origin: e.target.value })} className={inputCls} placeholder="Nampula, Mozambique" /></Field>
+          <Field label="Plant parts (comma-separated)"><input value={f.plant_parts} onChange={(e) => setF({ ...f, plant_parts: e.target.value })} className={inputCls} placeholder="leaves, root, bark" /></Field>
+        </div>
+        <Field label="Habitat"><input value={f.habitat} onChange={(e) => setF({ ...f, habitat: e.target.value })} className={inputCls} /></Field>
+        <Field label="Image URL"><input value={f.image_url} onChange={(e) => setF({ ...f, image_url: e.target.value })} className={inputCls} /></Field>
+        <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} className={inputCls} /></Field>
+        <SubmitRow editing={!!editing} label="plant" />
+        <StatusBar msg={msg} />
+      </form>
+      <RecordList<PlantRow>
+        title="All plants"
+        rows={list.data ?? undefined}
+        isLoading={list.isLoading}
+        getLabel={(r) => r.scientific_name}
+        getSub={(r) => r.family || r.geographic_origin}
+        onEdit={startEdit}
+        onDelete={onDelete}
+        editingId={editing?.id}
+      />
+    </div>
   );
 }
 
-function ActivityForm({ userId }: { userId: string }) {
+// ---------- ACTIVITIES ----------
+
+type ActivityRow = { id: string; name: string; category: string | null; description: string | null; mechanism: string | null };
+const EMPTY_ACTIVITY = { name: "", category: "", description: "", mechanism: "" };
+
+function ActivitiesTab({ userId }: { userId: string }) {
   const qc = useQueryClient();
   const { msg, setMsg } = useSubmitStatus();
-  const [f, setF] = useState({ name: "", category: "", description: "", mechanism: "" });
+  const [editing, setEditing] = useState<ActivityRow | null>(null);
+  const [f, setF] = useState(EMPTY_ACTIVITY);
+
+  const list = useQuery({
+    queryKey: ["admin-activities"],
+    queryFn: async () => (await supabase.from("pharmacological_activities").select("*").order("name").limit(1000)).data as ActivityRow[] | null,
+  });
+
+  const reset = () => { setEditing(null); setF(EMPTY_ACTIVITY); };
+  const startEdit = (r: ActivityRow) => {
+    setEditing(r);
+    setF({ name: r.name, category: r.category ?? "", description: r.description ?? "", mechanism: r.mechanism ?? "" });
+    setMsg(null);
+  };
+
   const submit = async (e: FormEvent) => {
     e.preventDefault(); setMsg(null);
-    const { error } = await supabase.from("pharmacological_activities").insert({ name: f.name, category: f.category || null, description: f.description || null, mechanism: f.mechanism || null, created_by: userId });
+    const payload = { name: f.name, category: f.category || null, description: f.description || null, mechanism: f.mechanism || null };
+    const { error } = editing
+      ? await supabase.from("pharmacological_activities").update(payload).eq("id", editing.id)
+      : await supabase.from("pharmacological_activities").insert({ ...payload, created_by: userId });
     if (error) setMsg({ kind: "err", text: error.message });
-    else { setMsg({ kind: "ok", text: `Added "${f.name}".` }); setF({ name: "", category: "", description: "", mechanism: "" }); qc.invalidateQueries({ queryKey: ["activities"] }); }
+    else {
+      setMsg({ kind: "ok", text: editing ? `Updated "${f.name}".` : `Added "${f.name}".` });
+      reset();
+      qc.invalidateQueries({ queryKey: ["admin-activities"] });
+      qc.invalidateQueries({ queryKey: ["activities"] });
+    }
   };
+
+  const onDelete = (r: ActivityRow) => confirmDelete(
+    r.name,
+    async () => await supabase.from("pharmacological_activities").delete().eq("id", r.id),
+    () => { qc.invalidateQueries({ queryKey: ["admin-activities"] }); qc.invalidateQueries({ queryKey: ["activities"] }); if (editing?.id === r.id) reset(); },
+    setMsg,
+  );
+
   return (
-    <form onSubmit={submit} className="space-y-4">
-      <Field label="Activity name" required><input required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} className={inputCls} placeholder="Antimalarial" /></Field>
-      <Field label="Category"><input value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })} className={inputCls} placeholder="Antiparasitic, Antioxidant…" /></Field>
-      <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} className={inputCls} /></Field>
-      <Field label="Mechanism"><textarea rows={2} value={f.mechanism} onChange={(e) => setF({ ...f, mechanism: e.target.value })} className={inputCls} /></Field>
-      <button className="px-5 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90">Add activity</button>
-      <StatusBar msg={msg} />
-    </form>
+    <div className="grid lg:grid-cols-2 gap-6">
+      <form onSubmit={submit} className="space-y-4">
+        <FormHeader title={editing ? "Edit activity" : "New activity"} onCancel={editing ? reset : undefined} />
+        <Field label="Activity name" required><input required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} className={inputCls} placeholder="Antimalarial" /></Field>
+        <Field label="Category"><input value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })} className={inputCls} placeholder="Antiparasitic, Antioxidant…" /></Field>
+        <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} className={inputCls} /></Field>
+        <Field label="Mechanism"><textarea rows={2} value={f.mechanism} onChange={(e) => setF({ ...f, mechanism: e.target.value })} className={inputCls} /></Field>
+        <SubmitRow editing={!!editing} label="activity" />
+        <StatusBar msg={msg} />
+      </form>
+      <RecordList<ActivityRow>
+        title="All activities"
+        rows={list.data ?? undefined}
+        isLoading={list.isLoading}
+        getLabel={(r) => r.name}
+        getSub={(r) => r.category}
+        onEdit={startEdit}
+        onDelete={onDelete}
+        editingId={editing?.id}
+      />
+    </div>
   );
 }
+
+// ---------- form helpers ----------
+
+function FormHeader({ title, onCancel }: { title: string; onCancel?: () => void }) {
+  return (
+    <div className="flex items-center justify-between">
+      <h3 className="text-sm font-semibold">{title}</h3>
+      {onCancel && (
+        <button type="button" onClick={onCancel} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+          <X className="h-3 w-3" /> Cancel edit
+        </button>
+      )}
+    </div>
+  );
+}
+function SubmitRow({ editing, label }: { editing: boolean; label: string }) {
+  return (
+    <button className="px-5 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90">
+      {editing ? `Save ${label}` : `Add ${label}`}
+    </button>
+  );
+}
+
+// ---------- citation (create-only, unchanged) ----------
 
 function CitationForm({ userId }: { userId: string }) {
   const qc = useQueryClient();
@@ -225,7 +439,7 @@ function CitationForm({ userId }: { userId: string }) {
     else { setMsg({ kind: "ok", text: "Citation added." }); setF({ title: "", authors: "", journal: "", year: "", doi: "", url: "" }); qc.invalidateQueries({ queryKey: ["citations"] }); }
   };
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={submit} className="space-y-4 max-w-2xl">
       <Field label="Title" required><input required value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} className={inputCls} /></Field>
       <Field label="Authors"><input value={f.authors} onChange={(e) => setF({ ...f, authors: e.target.value })} className={inputCls} /></Field>
       <div className="grid grid-cols-3 gap-3">
@@ -240,12 +454,14 @@ function CitationForm({ userId }: { userId: string }) {
   );
 }
 
+// ---------- link (unchanged) ----------
+
 function LinkForm() {
   const { msg, setMsg } = useSubmitStatus();
   const [kind, setKind] = useState<"plant_compound" | "compound_activity" | "plant_activity">("plant_compound");
-  const plants = useQuery({ queryKey: ["all-plants"], queryFn: async () => (await supabase.from("plants").select("id,scientific_name").order("scientific_name").limit(500)).data ?? [] });
-  const compounds = useQuery({ queryKey: ["all-compounds"], queryFn: async () => (await supabase.from("compounds").select("id,name").order("name").limit(500)).data ?? [] });
-  const acts = useQuery({ queryKey: ["all-acts"], queryFn: async () => (await supabase.from("pharmacological_activities").select("id,name").order("name").limit(500)).data ?? [] });
+  const plants = useQuery({ queryKey: ["all-plants"], queryFn: async () => (await supabase.from("plants").select("id,scientific_name").order("scientific_name").limit(1000)).data ?? [] });
+  const compounds = useQuery({ queryKey: ["all-compounds"], queryFn: async () => (await supabase.from("compounds").select("id,name").order("name").limit(1000)).data ?? [] });
+  const acts = useQuery({ queryKey: ["all-acts"], queryFn: async () => (await supabase.from("pharmacological_activities").select("id,name").order("name").limit(1000)).data ?? [] });
 
   const [plantId, setPlantId] = useState("");
   const [compoundId, setCompoundId] = useState("");
@@ -256,7 +472,7 @@ function LinkForm() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault(); setMsg(null);
-    let error: any = null;
+    let error: { message: string } | null = null;
     if (kind === "plant_compound") {
       ({ error } = await supabase.from("plant_compounds").insert({ plant_id: plantId, compound_id: compoundId, plant_part: plantPart || null, concentration: extra || null }));
     } else if (kind === "compound_activity") {
@@ -269,9 +485,9 @@ function LinkForm() {
   };
 
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={submit} className="space-y-4 max-w-2xl">
       <Field label="Link type">
-        <select value={kind} onChange={(e) => setKind(e.target.value as any)} className={inputCls}>
+        <select value={kind} onChange={(e) => setKind(e.target.value as typeof kind)} className={inputCls}>
           <option value="plant_compound">Plant ↔ Compound (constituent)</option>
           <option value="compound_activity">Compound ↔ Activity</option>
           <option value="plant_activity">Plant ↔ Activity</option>
@@ -302,15 +518,21 @@ function LinkForm() {
           </select>
         </Field>
       )}
-      {kind !== "compound_activity" && (
+
+      {(kind === "plant_compound" || kind === "plant_activity") && (
         <Field label="Plant part"><input value={plantPart} onChange={(e) => setPlantPart(e.target.value)} className={inputCls} placeholder="leaves, root…" /></Field>
       )}
-      <Field label={kind === "plant_compound" ? "Concentration" : kind === "compound_activity" ? "Potency (e.g. IC50)" : "Notes"}>
-        <input value={extra} onChange={(e) => setExtra(e.target.value)} className={inputCls} />
-      </Field>
+      {kind === "plant_compound" && <Field label="Concentration / notes"><input value={extra} onChange={(e) => setExtra(e.target.value)} className={inputCls} /></Field>}
+      {kind === "compound_activity" && <Field label="Potency (IC50, MIC…)"><input value={extra} onChange={(e) => setExtra(e.target.value)} className={inputCls} /></Field>}
       {kind === "plant_activity" && (
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={traditional} onChange={(e) => setTraditional(e.target.checked)} /> Traditional use</label>
+        <>
+          <Field label="Notes"><input value={extra} onChange={(e) => setExtra(e.target.value)} className={inputCls} /></Field>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={traditional} onChange={(e) => setTraditional(e.target.checked)} /> Traditional / ethnobotanical use
+          </label>
+        </>
       )}
+
       <button className="px-5 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90">Create link</button>
       <StatusBar msg={msg} />
     </form>
