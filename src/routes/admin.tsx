@@ -201,7 +201,7 @@ function CompoundsTab({ userId }: { userId: string }) {
 
   const onDelete = (r: CompoundRow) => confirmDelete(
     r.name,
-    () => supabase.from("compounds").delete().eq("id", r.id),
+    async () => await supabase.from("compounds").delete().eq("id", r.id),
     () => { qc.invalidateQueries({ queryKey: ["admin-compounds"] }); qc.invalidateQueries({ queryKey: ["compounds"] }); if (editing?.id === r.id) reset(); },
     setMsg,
   );
@@ -294,7 +294,7 @@ function PlantsTab({ userId }: { userId: string }) {
 
   const onDelete = (r: PlantRow) => confirmDelete(
     r.scientific_name,
-    () => supabase.from("plants").delete().eq("id", r.id),
+    async () => await supabase.from("plants").delete().eq("id", r.id),
     () => { qc.invalidateQueries({ queryKey: ["admin-plants"] }); qc.invalidateQueries({ queryKey: ["plants"] }); if (editing?.id === r.id) reset(); },
     setMsg,
   );
@@ -374,7 +374,7 @@ function ActivitiesTab({ userId }: { userId: string }) {
 
   const onDelete = (r: ActivityRow) => confirmDelete(
     r.name,
-    () => supabase.from("pharmacological_activities").delete().eq("id", r.id),
+    async () => await supabase.from("pharmacological_activities").delete().eq("id", r.id),
     () => { qc.invalidateQueries({ queryKey: ["admin-activities"] }); qc.invalidateQueries({ queryKey: ["activities"] }); if (editing?.id === r.id) reset(); },
     setMsg,
   );
