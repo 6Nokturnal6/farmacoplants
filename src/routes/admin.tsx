@@ -609,15 +609,51 @@ function ActivitiesTab({ userId }: { userId: string }) {
 
   return (
     <div className="grid lg:grid-cols-2 gap-6">
-      <form onSubmit={submit} className="space-y-4">
-        <FormHeader title={editing ? "Edit activity" : "New activity"} onCancel={editing ? reset : undefined} />
-        <Field label="Activity name" required><input required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} className={inputCls} placeholder="Antimalarial" /></Field>
-        <Field label="Category"><input value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })} className={inputCls} placeholder="Antiparasitic, Antioxidant…" /></Field>
-        <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} className={inputCls} /></Field>
-        <Field label="Mechanism"><textarea rows={2} value={f.mechanism} onChange={(e) => setF({ ...f, mechanism: e.target.value })} className={inputCls} /></Field>
-        <SubmitRow editing={!!editing} label="activity" />
-        <StatusBar msg={msg} />
-      </form>
+      <div className="space-y-4">
+        <form onSubmit={submit} className="space-y-4">
+          <FormHeader title={editing ? "Edit activity" : "New activity"} onCancel={editing ? reset : undefined} />
+          <Field label="Activity name" required><input required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} className={inputCls} placeholder="Antimalarial" /></Field>
+          <Field label="Category"><input value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })} className={inputCls} placeholder="Antiparasitic, Antioxidant…" /></Field>
+          <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} className={inputCls} /></Field>
+          <Field label="Mechanism"><textarea rows={2} value={f.mechanism} onChange={(e) => setF({ ...f, mechanism: e.target.value })} className={inputCls} /></Field>
+          <SubmitRow editing={!!editing} label="activity" />
+          <StatusBar msg={msg} />
+        </form>
+
+        {editing && (
+          <>
+            <RelationManager
+              title="Compounds with this activity"
+              table="compound_activities"
+              ownerColumn="activity_id"
+              ownerId={editing.id}
+              targetColumn="compound_id"
+              targetQueryKey="all-compounds"
+              targetTable="compounds"
+              targetLabelColumn="name"
+              extraFields={[
+                { key: "potency", label: "Potency", placeholder: "IC50 / MIC" },
+                { key: "assay", label: "Assay", placeholder: "in vitro…" },
+              ]}
+            />
+            <RelationManager
+              title="Plants with this activity"
+              table="plant_activities"
+              ownerColumn="activity_id"
+              ownerId={editing.id}
+              targetColumn="plant_id"
+              targetQueryKey="all-plants"
+              targetTable="plants"
+              targetLabelColumn="scientific_name"
+              extraFields={[
+                { key: "plant_part", label: "Part", placeholder: "leaves, root…" },
+                { key: "notes", label: "Notes" },
+                { key: "traditional_use", label: "Traditional / ethnobotanical", type: "checkbox" },
+              ]}
+            />
+          </>
+        )}
+      </div>
       <RecordList<ActivityRow>
         title="All activities"
         rows={list.data ?? undefined}
