@@ -187,8 +187,8 @@ function RelationManager({
   const targets = useQuery({
     queryKey: [targetQueryKey],
     queryFn: async () => {
-      const { data } = await supabase.from(targetTable).select(`id,${targetLabelColumn}`).order(targetLabelColumn).limit(1000);
-      return (data ?? []) as Array<{ id: string } & Record<string, string>>;
+      const { data } = await supabase.from(targetTable).select(`id, ${targetLabelColumn}`).order(targetLabelColumn).limit(1000);
+      return ((data ?? []) as unknown) as Array<{ id: string } & Record<string, string>>;
     },
   });
 
