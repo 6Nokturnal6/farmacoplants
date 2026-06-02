@@ -365,25 +365,72 @@ function CompoundsTab({ userId }: { userId: string }) {
 
   return (
     <div className="grid lg:grid-cols-2 gap-6">
-      <form onSubmit={submit} className="space-y-4">
-        <FormHeader title={editing ? "Edit compound" : "New compound"} onCancel={editing ? reset : undefined} />
-        <Field label="Name" required><input required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} className={inputCls} /></Field>
-        <Field label="IUPAC name"><input value={f.iupac_name} onChange={(e) => setF({ ...f, iupac_name: e.target.value })} className={inputCls} /></Field>
-        <Field label="SMILES"><input value={f.smiles} onChange={(e) => setF({ ...f, smiles: e.target.value })} className={inputCls + " font-mono"} placeholder="e.g. CC(=O)Oc1ccccc1C(=O)O" /></Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="InChI Key"><input value={f.inchi_key} onChange={(e) => setF({ ...f, inchi_key: e.target.value })} className={inputCls + " font-mono"} /></Field>
-          <Field label="Molecular formula"><input value={f.molecular_formula} onChange={(e) => setF({ ...f, molecular_formula: e.target.value })} className={inputCls + " font-mono"} /></Field>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Molecular weight (g/mol)"><input type="number" step="0.001" value={f.molecular_weight} onChange={(e) => setF({ ...f, molecular_weight: e.target.value })} className={inputCls} /></Field>
-          <Field label="Compound class"><input value={f.compound_class} onChange={(e) => setF({ ...f, compound_class: e.target.value })} className={inputCls} placeholder="alkaloid, flavonoid…" /></Field>
-        </div>
-        <Field label="InChI"><textarea rows={2} value={f.inchi} onChange={(e) => setF({ ...f, inchi: e.target.value })} className={inputCls + " font-mono"} /></Field>
-        <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} className={inputCls} /></Field>
-        <SubmitRow editing={!!editing} label="compound" />
-        <StatusBar msg={msg} />
-      </form>
+      <div className="space-y-4">
+        <form onSubmit={submit} className="space-y-4">
+          <FormHeader title={editing ? "Edit compound" : "New compound"} onCancel={editing ? reset : undefined} />
+          <Field label="Name" required><input required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} className={inputCls} /></Field>
+          <Field label="IUPAC name"><input value={f.iupac_name} onChange={(e) => setF({ ...f, iupac_name: e.target.value })} className={inputCls} /></Field>
+          <Field label="SMILES"><input value={f.smiles} onChange={(e) => setF({ ...f, smiles: e.target.value })} className={inputCls + " font-mono"} placeholder="e.g. CC(=O)Oc1ccccc1C(=O)O" /></Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="InChI Key"><input value={f.inchi_key} onChange={(e) => setF({ ...f, inchi_key: e.target.value })} className={inputCls + " font-mono"} /></Field>
+            <Field label="Molecular formula"><input value={f.molecular_formula} onChange={(e) => setF({ ...f, molecular_formula: e.target.value })} className={inputCls + " font-mono"} /></Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Molecular weight (g/mol)"><input type="number" step="0.001" value={f.molecular_weight} onChange={(e) => setF({ ...f, molecular_weight: e.target.value })} className={inputCls} /></Field>
+            <Field label="Compound class"><input value={f.compound_class} onChange={(e) => setF({ ...f, compound_class: e.target.value })} className={inputCls} placeholder="alkaloid, flavonoid…" /></Field>
+          </div>
+          <Field label="InChI"><textarea rows={2} value={f.inchi} onChange={(e) => setF({ ...f, inchi: e.target.value })} className={inputCls + " font-mono"} /></Field>
+          <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} className={inputCls} /></Field>
+          <SubmitRow editing={!!editing} label="compound" />
+          <StatusBar msg={msg} />
+        </form>
+
+        {editing && (
+          <>
+            <RelationManager
+              title="Source plants"
+              table="plant_compounds"
+              ownerColumn="compound_id"
+              ownerId={editing.id}
+              targetColumn="plant_id"
+              targetQueryKey="all-plants"
+              targetTable="plants"
+              targetLabelColumn="scientific_name"
+              extraFields={[
+                { key: "plant_part", label: "Part", placeholder: "leaves, root…" },
+                { key: "concentration", label: "Concentration", placeholder: "0.2 % w/w" },
+              ]}
+            />
+            <RelationManager
+              title="Pharmacological activities"
+              table="compound_activities"
+              ownerColumn="compound_id"
+              ownerId={editing.id}
+              targetColumn="activity_id"
+              targetQueryKey="all-acts"
+              targetTable="pharmacological_activities"
+              targetLabelColumn="name"
+              extraFields={[
+                { key: "potency", label: "Potency", placeholder: "IC50 / MIC" },
+                { key: "assay", label: "Assay", placeholder: "in vitro…" },
+              ]}
+            />
+          </>
+        )}
+      </div>
       <RecordList<CompoundRow>
+        title="All compounds"
+        rows={list.data ?? undefined}
+        isLoading={list.isLoading}
+        getLabel={(r) => r.name}
+        getSub={(r) => r.compound_class || r.molecular_formula || r.smiles}
+        onEdit={startEdit}
+        onDelete={onDelete}
+        editingId={editing?.id}
+      />
+    </div>
+  );
+}
         title="All compounds"
         rows={list.data ?? undefined}
         isLoading={list.isLoading}
