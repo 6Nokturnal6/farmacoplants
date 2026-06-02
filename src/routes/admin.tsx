@@ -215,7 +215,7 @@ function RelationManager({
       if (f.type === "checkbox") row[f.key] = !!v;
       else row[f.key] = v ? String(v) : null;
     }
-    const { error } = await supabase.from(table).insert(row);
+    const { error } = await supabase.from(table).insert(row as never);
     if (error) setMsg({ kind: "err", text: error.message });
     else {
       setMsg({ kind: "ok", text: "Link added." });
