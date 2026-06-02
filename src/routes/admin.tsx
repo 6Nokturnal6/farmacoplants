@@ -153,6 +153,163 @@ async function confirmDelete(label: string, fn: () => Promise<{ error: { message
   else { setMsg({ kind: "ok", text: `Deleted "${label}".` }); onDone(); }
 }
 
+// ---------- RELATIONSHIP MANAGER ----------
+
+type RelField = { key: string; label: string; type?: "text" | "checkbox"; placeholder?: string };
+
+type RelationManagerProps = {
+  title: string;
+  table: "plant_compounds" | "compound_activities" | "plant_activities";
+  ownerColumn: string;
+  ownerId: string;
+  targetColumn: string;
+  targetQueryKey: string;
+  targetTable: "plants" | "compounds" | "pharmacological_activities";
+  targetLabelColumn: string;
+  extraFields?: RelField[];
+};
+
+function RelationManager({
+  title, table, ownerColumn, ownerId, targetColumn,
+  targetQueryKey, targetTable, targetLabelColumn, extraFields = [],
+}: RelationManagerProps) {
+  const qc = useQueryClient();
+  const { msg, setMsg } = useSubmitStatus();
+
+  const links = useQuery({
+    queryKey: ["rel", table, ownerColumn, ownerId],
+    queryFn: async () => {
+      const { data } = await supabase.from(table).select("*").eq(ownerColumn, ownerId).limit(1000);
+      return (data ?? []) as Array<Record<string, unknown> & { id: string }>;
+    },
+  });
+
+  const targets = useQuery({
+    queryKey: [targetQueryKey],
+    queryFn: async () => {
+      const { data } = await supabase.from(targetTable).select(`id,${targetLabelColumn}`).order(targetLabelColumn).limit(1000);
+      return (data ?? []) as Array<{ id: string } & Record<string, string>>;
+    },
+  });
+
+  const targetMap = new Map((targets.data ?? []).map((t) => [t.id, t[targetLabelColumn]]));
+
+  const [targetId, setTargetId] = useState("");
+  const [extra, setExtra] = useState<Record<string, string | boolean>>(
+    Object.fromEntries(extraFields.map((f) => [f.key, f.type === "checkbox" ? false : ""])),
+  );
+
+  const resetForm = () => {
+    setTargetId("");
+    setExtra(Object.fromEntries(extraFields.map((f) => [f.key, f.type === "checkbox" ? false : ""])));
+  };
+
+  const add = async (e: FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMsg(null);
+    if (!targetId) { setMsg({ kind: "err", text: "Select a record to link." }); return; }
+    const row: Record<string, unknown> = { [ownerColumn]: ownerId, [targetColumn]: targetId };
+    for (const f of extraFields) {
+      const v = extra[f.key];
+      if (f.type === "checkbox") row[f.key] = !!v;
+      else row[f.key] = v ? String(v) : null;
+    }
+    const { error } = await supabase.from(table).insert(row);
+    if (error) setMsg({ kind: "err", text: error.message });
+    else {
+      setMsg({ kind: "ok", text: "Link added." });
+      resetForm();
+      qc.invalidateQueries({ queryKey: ["rel", table, ownerColumn, ownerId] });
+    }
+  };
+
+  const remove = async (rowId: string, label: string) => {
+    if (!window.confirm(`Remove link to "${label}"?`)) return;
+    const { error } = await supabase.from(table).delete().eq("id", rowId);
+    if (error) setMsg({ kind: "err", text: error.message });
+    else {
+      setMsg({ kind: "ok", text: "Link removed." });
+      qc.invalidateQueries({ queryKey: ["rel", table, ownerColumn, ownerId] });
+    }
+  };
+
+  const linkedIds = new Set((links.data ?? []).map((l) => l[targetColumn] as string));
+  const available = (targets.data ?? []).filter((t) => !linkedIds.has(t.id));
+
+  return (
+    <div className="rounded-lg border border-border bg-card/40 p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-semibold">{title}</h4>
+        <span className="text-xs text-muted-foreground">{links.data?.length ?? 0}</span>
+      </div>
+
+      <div className="divide-y divide-border rounded-md border border-border/60 max-h-48 overflow-y-auto">
+        {links.isLoading && <div className="p-3 text-xs text-muted-foreground">Loading…</div>}
+        {!links.isLoading && (links.data?.length ?? 0) === 0 && (
+          <div className="p-3 text-xs text-muted-foreground">No links yet.</div>
+        )}
+        {links.data?.map((l) => {
+          const tid = l[targetColumn] as string;
+          const name = targetMap.get(tid) ?? tid.slice(0, 8);
+          const meta = extraFields
+            .map((f) => {
+              const v = l[f.key];
+              if (v === null || v === undefined || v === "" || v === false) return null;
+              return f.type === "checkbox" ? f.label : `${f.label}: ${String(v)}`;
+            })
+            .filter(Boolean)
+            .join(" • ");
+          return (
+            <div key={l.id} className="px-3 py-2 flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <div className="text-sm truncate">{name}</div>
+                {meta && <div className="text-xs text-muted-foreground truncate">{meta}</div>}
+              </div>
+              <button type="button" onClick={() => remove(l.id, String(name))} className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive" title="Remove">
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="space-y-2 pt-1">
+        <select value={targetId} onChange={(e) => setTargetId(e.target.value)} className={inputCls}>
+          <option value="">+ Add link…</option>
+          {available.map((t) => <option key={t.id} value={t.id}>{t[targetLabelColumn]}</option>)}
+        </select>
+        {targetId && extraFields.length > 0 && (
+          <div className="grid grid-cols-2 gap-2">
+            {extraFields.map((f) =>
+              f.type === "checkbox" ? (
+                <label key={f.key} className="flex items-center gap-2 text-xs col-span-2">
+                  <input type="checkbox" checked={!!extra[f.key]} onChange={(e) => setExtra({ ...extra, [f.key]: e.target.checked })} />
+                  {f.label}
+                </label>
+              ) : (
+                <input
+                  key={f.key}
+                  value={String(extra[f.key] ?? "")}
+                  onChange={(e) => setExtra({ ...extra, [f.key]: e.target.value })}
+                  placeholder={f.placeholder ?? f.label}
+                  className={inputCls + " text-xs"}
+                />
+              ),
+            )}
+          </div>
+        )}
+        {targetId && (
+          <button type="button" onClick={add} className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90">
+            Link
+          </button>
+        )}
+        <StatusBar msg={msg} />
+      </div>
+    </div>
+  );
+}
+
 // ---------- COMPOUNDS ----------
 
 type CompoundRow = { id: string; name: string; iupac_name: string | null; smiles: string | null; inchi: string | null; inchi_key: string | null; molecular_formula: string | null; molecular_weight: number | null; compound_class: string | null; description: string | null };
