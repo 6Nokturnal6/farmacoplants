@@ -153,6 +153,163 @@ async function confirmDelete(label: string, fn: () => Promise<{ error: { message
   else { setMsg({ kind: "ok", text: `Deleted "${label}".` }); onDone(); }
 }
 
+// ---------- RELATIONSHIP MANAGER ----------
+
+type RelField = { key: string; label: string; type?: "text" | "checkbox"; placeholder?: string };
+
+type RelationManagerProps = {
+  title: string;
+  table: "plant_compounds" | "compound_activities" | "plant_activities";
+  ownerColumn: string;
+  ownerId: string;
+  targetColumn: string;
+  targetQueryKey: string;
+  targetTable: "plants" | "compounds" | "pharmacological_activities";
+  targetLabelColumn: string;
+  extraFields?: RelField[];
+};
+
+function RelationManager({
+  title, table, ownerColumn, ownerId, targetColumn,
+  targetQueryKey, targetTable, targetLabelColumn, extraFields = [],
+}: RelationManagerProps) {
+  const qc = useQueryClient();
+  const { msg, setMsg } = useSubmitStatus();
+
+  const links = useQuery({
+    queryKey: ["rel", table, ownerColumn, ownerId],
+    queryFn: async () => {
+      const { data } = await supabase.from(table).select("*").eq(ownerColumn, ownerId).limit(1000);
+      return (data ?? []) as Array<Record<string, unknown> & { id: string }>;
+    },
+  });
+
+  const targets = useQuery({
+    queryKey: [targetQueryKey],
+    queryFn: async () => {
+      const { data } = await supabase.from(targetTable).select(`id, ${targetLabelColumn}`).order(targetLabelColumn).limit(1000);
+      return ((data ?? []) as unknown) as Array<{ id: string } & Record<string, string>>;
+    },
+  });
+
+  const targetMap = new Map((targets.data ?? []).map((t) => [t.id, t[targetLabelColumn]]));
+
+  const [targetId, setTargetId] = useState("");
+  const [extra, setExtra] = useState<Record<string, string | boolean>>(
+    Object.fromEntries(extraFields.map((f) => [f.key, f.type === "checkbox" ? false : ""])),
+  );
+
+  const resetForm = () => {
+    setTargetId("");
+    setExtra(Object.fromEntries(extraFields.map((f) => [f.key, f.type === "checkbox" ? false : ""])));
+  };
+
+  const add = async (e: FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMsg(null);
+    if (!targetId) { setMsg({ kind: "err", text: "Select a record to link." }); return; }
+    const row: Record<string, unknown> = { [ownerColumn]: ownerId, [targetColumn]: targetId };
+    for (const f of extraFields) {
+      const v = extra[f.key];
+      if (f.type === "checkbox") row[f.key] = !!v;
+      else row[f.key] = v ? String(v) : null;
+    }
+    const { error } = await supabase.from(table).insert(row as never);
+    if (error) setMsg({ kind: "err", text: error.message });
+    else {
+      setMsg({ kind: "ok", text: "Link added." });
+      resetForm();
+      qc.invalidateQueries({ queryKey: ["rel", table, ownerColumn, ownerId] });
+    }
+  };
+
+  const remove = async (rowId: string, label: string) => {
+    if (!window.confirm(`Remove link to "${label}"?`)) return;
+    const { error } = await supabase.from(table).delete().eq("id", rowId);
+    if (error) setMsg({ kind: "err", text: error.message });
+    else {
+      setMsg({ kind: "ok", text: "Link removed." });
+      qc.invalidateQueries({ queryKey: ["rel", table, ownerColumn, ownerId] });
+    }
+  };
+
+  const linkedIds = new Set((links.data ?? []).map((l) => l[targetColumn] as string));
+  const available = (targets.data ?? []).filter((t) => !linkedIds.has(t.id));
+
+  return (
+    <div className="rounded-lg border border-border bg-card/40 p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-semibold">{title}</h4>
+        <span className="text-xs text-muted-foreground">{links.data?.length ?? 0}</span>
+      </div>
+
+      <div className="divide-y divide-border rounded-md border border-border/60 max-h-48 overflow-y-auto">
+        {links.isLoading && <div className="p-3 text-xs text-muted-foreground">Loading…</div>}
+        {!links.isLoading && (links.data?.length ?? 0) === 0 && (
+          <div className="p-3 text-xs text-muted-foreground">No links yet.</div>
+        )}
+        {links.data?.map((l) => {
+          const tid = l[targetColumn] as string;
+          const name = targetMap.get(tid) ?? tid.slice(0, 8);
+          const meta = extraFields
+            .map((f) => {
+              const v = l[f.key];
+              if (v === null || v === undefined || v === "" || v === false) return null;
+              return f.type === "checkbox" ? f.label : `${f.label}: ${String(v)}`;
+            })
+            .filter(Boolean)
+            .join(" • ");
+          return (
+            <div key={l.id} className="px-3 py-2 flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <div className="text-sm truncate">{name}</div>
+                {meta && <div className="text-xs text-muted-foreground truncate">{meta}</div>}
+              </div>
+              <button type="button" onClick={() => remove(l.id, String(name))} className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive" title="Remove">
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="space-y-2 pt-1">
+        <select value={targetId} onChange={(e) => setTargetId(e.target.value)} className={inputCls}>
+          <option value="">+ Add link…</option>
+          {available.map((t) => <option key={t.id} value={t.id}>{t[targetLabelColumn]}</option>)}
+        </select>
+        {targetId && extraFields.length > 0 && (
+          <div className="grid grid-cols-2 gap-2">
+            {extraFields.map((f) =>
+              f.type === "checkbox" ? (
+                <label key={f.key} className="flex items-center gap-2 text-xs col-span-2">
+                  <input type="checkbox" checked={!!extra[f.key]} onChange={(e) => setExtra({ ...extra, [f.key]: e.target.checked })} />
+                  {f.label}
+                </label>
+              ) : (
+                <input
+                  key={f.key}
+                  value={String(extra[f.key] ?? "")}
+                  onChange={(e) => setExtra({ ...extra, [f.key]: e.target.value })}
+                  placeholder={f.placeholder ?? f.label}
+                  className={inputCls + " text-xs"}
+                />
+              ),
+            )}
+          </div>
+        )}
+        {targetId && (
+          <button type="button" onClick={add} className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90">
+            Link
+          </button>
+        )}
+        <StatusBar msg={msg} />
+      </div>
+    </div>
+  );
+}
+
 // ---------- COMPOUNDS ----------
 
 type CompoundRow = { id: string; name: string; iupac_name: string | null; smiles: string | null; inchi: string | null; inchi_key: string | null; molecular_formula: string | null; molecular_weight: number | null; compound_class: string | null; description: string | null };
@@ -208,24 +365,59 @@ function CompoundsTab({ userId }: { userId: string }) {
 
   return (
     <div className="grid lg:grid-cols-2 gap-6">
-      <form onSubmit={submit} className="space-y-4">
-        <FormHeader title={editing ? "Edit compound" : "New compound"} onCancel={editing ? reset : undefined} />
-        <Field label="Name" required><input required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} className={inputCls} /></Field>
-        <Field label="IUPAC name"><input value={f.iupac_name} onChange={(e) => setF({ ...f, iupac_name: e.target.value })} className={inputCls} /></Field>
-        <Field label="SMILES"><input value={f.smiles} onChange={(e) => setF({ ...f, smiles: e.target.value })} className={inputCls + " font-mono"} placeholder="e.g. CC(=O)Oc1ccccc1C(=O)O" /></Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="InChI Key"><input value={f.inchi_key} onChange={(e) => setF({ ...f, inchi_key: e.target.value })} className={inputCls + " font-mono"} /></Field>
-          <Field label="Molecular formula"><input value={f.molecular_formula} onChange={(e) => setF({ ...f, molecular_formula: e.target.value })} className={inputCls + " font-mono"} /></Field>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Molecular weight (g/mol)"><input type="number" step="0.001" value={f.molecular_weight} onChange={(e) => setF({ ...f, molecular_weight: e.target.value })} className={inputCls} /></Field>
-          <Field label="Compound class"><input value={f.compound_class} onChange={(e) => setF({ ...f, compound_class: e.target.value })} className={inputCls} placeholder="alkaloid, flavonoid…" /></Field>
-        </div>
-        <Field label="InChI"><textarea rows={2} value={f.inchi} onChange={(e) => setF({ ...f, inchi: e.target.value })} className={inputCls + " font-mono"} /></Field>
-        <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} className={inputCls} /></Field>
-        <SubmitRow editing={!!editing} label="compound" />
-        <StatusBar msg={msg} />
-      </form>
+      <div className="space-y-4">
+        <form onSubmit={submit} className="space-y-4">
+          <FormHeader title={editing ? "Edit compound" : "New compound"} onCancel={editing ? reset : undefined} />
+          <Field label="Name" required><input required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} className={inputCls} /></Field>
+          <Field label="IUPAC name"><input value={f.iupac_name} onChange={(e) => setF({ ...f, iupac_name: e.target.value })} className={inputCls} /></Field>
+          <Field label="SMILES"><input value={f.smiles} onChange={(e) => setF({ ...f, smiles: e.target.value })} className={inputCls + " font-mono"} placeholder="e.g. CC(=O)Oc1ccccc1C(=O)O" /></Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="InChI Key"><input value={f.inchi_key} onChange={(e) => setF({ ...f, inchi_key: e.target.value })} className={inputCls + " font-mono"} /></Field>
+            <Field label="Molecular formula"><input value={f.molecular_formula} onChange={(e) => setF({ ...f, molecular_formula: e.target.value })} className={inputCls + " font-mono"} /></Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Molecular weight (g/mol)"><input type="number" step="0.001" value={f.molecular_weight} onChange={(e) => setF({ ...f, molecular_weight: e.target.value })} className={inputCls} /></Field>
+            <Field label="Compound class"><input value={f.compound_class} onChange={(e) => setF({ ...f, compound_class: e.target.value })} className={inputCls} placeholder="alkaloid, flavonoid…" /></Field>
+          </div>
+          <Field label="InChI"><textarea rows={2} value={f.inchi} onChange={(e) => setF({ ...f, inchi: e.target.value })} className={inputCls + " font-mono"} /></Field>
+          <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} className={inputCls} /></Field>
+          <SubmitRow editing={!!editing} label="compound" />
+          <StatusBar msg={msg} />
+        </form>
+
+        {editing && (
+          <>
+            <RelationManager
+              title="Source plants"
+              table="plant_compounds"
+              ownerColumn="compound_id"
+              ownerId={editing.id}
+              targetColumn="plant_id"
+              targetQueryKey="all-plants"
+              targetTable="plants"
+              targetLabelColumn="scientific_name"
+              extraFields={[
+                { key: "plant_part", label: "Part", placeholder: "leaves, root…" },
+                { key: "concentration", label: "Concentration", placeholder: "0.2 % w/w" },
+              ]}
+            />
+            <RelationManager
+              title="Pharmacological activities"
+              table="compound_activities"
+              ownerColumn="compound_id"
+              ownerId={editing.id}
+              targetColumn="activity_id"
+              targetQueryKey="all-acts"
+              targetTable="pharmacological_activities"
+              targetLabelColumn="name"
+              extraFields={[
+                { key: "potency", label: "Potency", placeholder: "IC50 / MIC" },
+                { key: "assay", label: "Assay", placeholder: "in vitro…" },
+              ]}
+            />
+          </>
+        )}
+      </div>
       <RecordList<CompoundRow>
         title="All compounds"
         rows={list.data ?? undefined}
@@ -301,25 +493,61 @@ function PlantsTab({ userId }: { userId: string }) {
 
   return (
     <div className="grid lg:grid-cols-2 gap-6">
-      <form onSubmit={submit} className="space-y-4">
-        <FormHeader title={editing ? "Edit plant" : "New plant"} onCancel={editing ? reset : undefined} />
-        <Field label="Scientific name" required><input required value={f.scientific_name} onChange={(e) => setF({ ...f, scientific_name: e.target.value })} className={inputCls + " italic"} placeholder="Catharanthus roseus" /></Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Family"><input value={f.family} onChange={(e) => setF({ ...f, family: e.target.value })} className={inputCls} /></Field>
-          <Field label="Genus"><input value={f.genus} onChange={(e) => setF({ ...f, genus: e.target.value })} className={inputCls} /></Field>
-        </div>
-        <Field label="Common names (comma-separated)"><input value={f.common_names} onChange={(e) => setF({ ...f, common_names: e.target.value })} className={inputCls} /></Field>
-        <Field label="Local names (comma-separated)"><input value={f.local_names} onChange={(e) => setF({ ...f, local_names: e.target.value })} className={inputCls} placeholder="Macua, Emakhuwa…" /></Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Geographic origin"><input value={f.geographic_origin} onChange={(e) => setF({ ...f, geographic_origin: e.target.value })} className={inputCls} placeholder="Nampula, Mozambique" /></Field>
-          <Field label="Plant parts (comma-separated)"><input value={f.plant_parts} onChange={(e) => setF({ ...f, plant_parts: e.target.value })} className={inputCls} placeholder="leaves, root, bark" /></Field>
-        </div>
-        <Field label="Habitat"><input value={f.habitat} onChange={(e) => setF({ ...f, habitat: e.target.value })} className={inputCls} /></Field>
-        <Field label="Image URL"><input value={f.image_url} onChange={(e) => setF({ ...f, image_url: e.target.value })} className={inputCls} /></Field>
-        <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} className={inputCls} /></Field>
-        <SubmitRow editing={!!editing} label="plant" />
-        <StatusBar msg={msg} />
-      </form>
+      <div className="space-y-4">
+        <form onSubmit={submit} className="space-y-4">
+          <FormHeader title={editing ? "Edit plant" : "New plant"} onCancel={editing ? reset : undefined} />
+          <Field label="Scientific name" required><input required value={f.scientific_name} onChange={(e) => setF({ ...f, scientific_name: e.target.value })} className={inputCls + " italic"} placeholder="Catharanthus roseus" /></Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Family"><input value={f.family} onChange={(e) => setF({ ...f, family: e.target.value })} className={inputCls} /></Field>
+            <Field label="Genus"><input value={f.genus} onChange={(e) => setF({ ...f, genus: e.target.value })} className={inputCls} /></Field>
+          </div>
+          <Field label="Common names (comma-separated)"><input value={f.common_names} onChange={(e) => setF({ ...f, common_names: e.target.value })} className={inputCls} /></Field>
+          <Field label="Local names (comma-separated)"><input value={f.local_names} onChange={(e) => setF({ ...f, local_names: e.target.value })} className={inputCls} placeholder="Macua, Emakhuwa…" /></Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Geographic origin"><input value={f.geographic_origin} onChange={(e) => setF({ ...f, geographic_origin: e.target.value })} className={inputCls} placeholder="Nampula, Mozambique" /></Field>
+            <Field label="Plant parts (comma-separated)"><input value={f.plant_parts} onChange={(e) => setF({ ...f, plant_parts: e.target.value })} className={inputCls} placeholder="leaves, root, bark" /></Field>
+          </div>
+          <Field label="Habitat"><input value={f.habitat} onChange={(e) => setF({ ...f, habitat: e.target.value })} className={inputCls} /></Field>
+          <Field label="Image URL"><input value={f.image_url} onChange={(e) => setF({ ...f, image_url: e.target.value })} className={inputCls} /></Field>
+          <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} className={inputCls} /></Field>
+          <SubmitRow editing={!!editing} label="plant" />
+          <StatusBar msg={msg} />
+        </form>
+
+        {editing && (
+          <>
+            <RelationManager
+              title="Compounds in this plant"
+              table="plant_compounds"
+              ownerColumn="plant_id"
+              ownerId={editing.id}
+              targetColumn="compound_id"
+              targetQueryKey="all-compounds"
+              targetTable="compounds"
+              targetLabelColumn="name"
+              extraFields={[
+                { key: "plant_part", label: "Part", placeholder: "leaves, root…" },
+                { key: "concentration", label: "Concentration", placeholder: "0.2 % w/w" },
+              ]}
+            />
+            <RelationManager
+              title="Pharmacological activities"
+              table="plant_activities"
+              ownerColumn="plant_id"
+              ownerId={editing.id}
+              targetColumn="activity_id"
+              targetQueryKey="all-acts"
+              targetTable="pharmacological_activities"
+              targetLabelColumn="name"
+              extraFields={[
+                { key: "plant_part", label: "Part", placeholder: "leaves, root…" },
+                { key: "notes", label: "Notes" },
+                { key: "traditional_use", label: "Traditional / ethnobotanical", type: "checkbox" },
+              ]}
+            />
+          </>
+        )}
+      </div>
       <RecordList<PlantRow>
         title="All plants"
         rows={list.data ?? undefined}
@@ -381,15 +609,51 @@ function ActivitiesTab({ userId }: { userId: string }) {
 
   return (
     <div className="grid lg:grid-cols-2 gap-6">
-      <form onSubmit={submit} className="space-y-4">
-        <FormHeader title={editing ? "Edit activity" : "New activity"} onCancel={editing ? reset : undefined} />
-        <Field label="Activity name" required><input required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} className={inputCls} placeholder="Antimalarial" /></Field>
-        <Field label="Category"><input value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })} className={inputCls} placeholder="Antiparasitic, Antioxidant…" /></Field>
-        <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} className={inputCls} /></Field>
-        <Field label="Mechanism"><textarea rows={2} value={f.mechanism} onChange={(e) => setF({ ...f, mechanism: e.target.value })} className={inputCls} /></Field>
-        <SubmitRow editing={!!editing} label="activity" />
-        <StatusBar msg={msg} />
-      </form>
+      <div className="space-y-4">
+        <form onSubmit={submit} className="space-y-4">
+          <FormHeader title={editing ? "Edit activity" : "New activity"} onCancel={editing ? reset : undefined} />
+          <Field label="Activity name" required><input required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} className={inputCls} placeholder="Antimalarial" /></Field>
+          <Field label="Category"><input value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })} className={inputCls} placeholder="Antiparasitic, Antioxidant…" /></Field>
+          <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} className={inputCls} /></Field>
+          <Field label="Mechanism"><textarea rows={2} value={f.mechanism} onChange={(e) => setF({ ...f, mechanism: e.target.value })} className={inputCls} /></Field>
+          <SubmitRow editing={!!editing} label="activity" />
+          <StatusBar msg={msg} />
+        </form>
+
+        {editing && (
+          <>
+            <RelationManager
+              title="Compounds with this activity"
+              table="compound_activities"
+              ownerColumn="activity_id"
+              ownerId={editing.id}
+              targetColumn="compound_id"
+              targetQueryKey="all-compounds"
+              targetTable="compounds"
+              targetLabelColumn="name"
+              extraFields={[
+                { key: "potency", label: "Potency", placeholder: "IC50 / MIC" },
+                { key: "assay", label: "Assay", placeholder: "in vitro…" },
+              ]}
+            />
+            <RelationManager
+              title="Plants with this activity"
+              table="plant_activities"
+              ownerColumn="activity_id"
+              ownerId={editing.id}
+              targetColumn="plant_id"
+              targetQueryKey="all-plants"
+              targetTable="plants"
+              targetLabelColumn="scientific_name"
+              extraFields={[
+                { key: "plant_part", label: "Part", placeholder: "leaves, root…" },
+                { key: "notes", label: "Notes" },
+                { key: "traditional_use", label: "Traditional / ethnobotanical", type: "checkbox" },
+              ]}
+            />
+          </>
+        )}
+      </div>
       <RecordList<ActivityRow>
         title="All activities"
         rows={list.data ?? undefined}
