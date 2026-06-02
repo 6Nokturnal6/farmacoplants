@@ -431,18 +431,6 @@ function CompoundsTab({ userId }: { userId: string }) {
     </div>
   );
 }
-        title="All compounds"
-        rows={list.data ?? undefined}
-        isLoading={list.isLoading}
-        getLabel={(r) => r.name}
-        getSub={(r) => r.compound_class || r.molecular_formula || r.smiles}
-        onEdit={startEdit}
-        onDelete={onDelete}
-        editingId={editing?.id}
-      />
-    </div>
-  );
-}
 
 // ---------- PLANTS ----------
 
