@@ -493,25 +493,61 @@ function PlantsTab({ userId }: { userId: string }) {
 
   return (
     <div className="grid lg:grid-cols-2 gap-6">
-      <form onSubmit={submit} className="space-y-4">
-        <FormHeader title={editing ? "Edit plant" : "New plant"} onCancel={editing ? reset : undefined} />
-        <Field label="Scientific name" required><input required value={f.scientific_name} onChange={(e) => setF({ ...f, scientific_name: e.target.value })} className={inputCls + " italic"} placeholder="Catharanthus roseus" /></Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Family"><input value={f.family} onChange={(e) => setF({ ...f, family: e.target.value })} className={inputCls} /></Field>
-          <Field label="Genus"><input value={f.genus} onChange={(e) => setF({ ...f, genus: e.target.value })} className={inputCls} /></Field>
-        </div>
-        <Field label="Common names (comma-separated)"><input value={f.common_names} onChange={(e) => setF({ ...f, common_names: e.target.value })} className={inputCls} /></Field>
-        <Field label="Local names (comma-separated)"><input value={f.local_names} onChange={(e) => setF({ ...f, local_names: e.target.value })} className={inputCls} placeholder="Macua, Emakhuwa…" /></Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Geographic origin"><input value={f.geographic_origin} onChange={(e) => setF({ ...f, geographic_origin: e.target.value })} className={inputCls} placeholder="Nampula, Mozambique" /></Field>
-          <Field label="Plant parts (comma-separated)"><input value={f.plant_parts} onChange={(e) => setF({ ...f, plant_parts: e.target.value })} className={inputCls} placeholder="leaves, root, bark" /></Field>
-        </div>
-        <Field label="Habitat"><input value={f.habitat} onChange={(e) => setF({ ...f, habitat: e.target.value })} className={inputCls} /></Field>
-        <Field label="Image URL"><input value={f.image_url} onChange={(e) => setF({ ...f, image_url: e.target.value })} className={inputCls} /></Field>
-        <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} className={inputCls} /></Field>
-        <SubmitRow editing={!!editing} label="plant" />
-        <StatusBar msg={msg} />
-      </form>
+      <div className="space-y-4">
+        <form onSubmit={submit} className="space-y-4">
+          <FormHeader title={editing ? "Edit plant" : "New plant"} onCancel={editing ? reset : undefined} />
+          <Field label="Scientific name" required><input required value={f.scientific_name} onChange={(e) => setF({ ...f, scientific_name: e.target.value })} className={inputCls + " italic"} placeholder="Catharanthus roseus" /></Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Family"><input value={f.family} onChange={(e) => setF({ ...f, family: e.target.value })} className={inputCls} /></Field>
+            <Field label="Genus"><input value={f.genus} onChange={(e) => setF({ ...f, genus: e.target.value })} className={inputCls} /></Field>
+          </div>
+          <Field label="Common names (comma-separated)"><input value={f.common_names} onChange={(e) => setF({ ...f, common_names: e.target.value })} className={inputCls} /></Field>
+          <Field label="Local names (comma-separated)"><input value={f.local_names} onChange={(e) => setF({ ...f, local_names: e.target.value })} className={inputCls} placeholder="Macua, Emakhuwa…" /></Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Geographic origin"><input value={f.geographic_origin} onChange={(e) => setF({ ...f, geographic_origin: e.target.value })} className={inputCls} placeholder="Nampula, Mozambique" /></Field>
+            <Field label="Plant parts (comma-separated)"><input value={f.plant_parts} onChange={(e) => setF({ ...f, plant_parts: e.target.value })} className={inputCls} placeholder="leaves, root, bark" /></Field>
+          </div>
+          <Field label="Habitat"><input value={f.habitat} onChange={(e) => setF({ ...f, habitat: e.target.value })} className={inputCls} /></Field>
+          <Field label="Image URL"><input value={f.image_url} onChange={(e) => setF({ ...f, image_url: e.target.value })} className={inputCls} /></Field>
+          <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} className={inputCls} /></Field>
+          <SubmitRow editing={!!editing} label="plant" />
+          <StatusBar msg={msg} />
+        </form>
+
+        {editing && (
+          <>
+            <RelationManager
+              title="Compounds in this plant"
+              table="plant_compounds"
+              ownerColumn="plant_id"
+              ownerId={editing.id}
+              targetColumn="compound_id"
+              targetQueryKey="all-compounds"
+              targetTable="compounds"
+              targetLabelColumn="name"
+              extraFields={[
+                { key: "plant_part", label: "Part", placeholder: "leaves, root…" },
+                { key: "concentration", label: "Concentration", placeholder: "0.2 % w/w" },
+              ]}
+            />
+            <RelationManager
+              title="Pharmacological activities"
+              table="plant_activities"
+              ownerColumn="plant_id"
+              ownerId={editing.id}
+              targetColumn="activity_id"
+              targetQueryKey="all-acts"
+              targetTable="pharmacological_activities"
+              targetLabelColumn="name"
+              extraFields={[
+                { key: "plant_part", label: "Part", placeholder: "leaves, root…" },
+                { key: "notes", label: "Notes" },
+                { key: "traditional_use", label: "Traditional / ethnobotanical", type: "checkbox" },
+              ]}
+            />
+          </>
+        )}
+      </div>
       <RecordList<PlantRow>
         title="All plants"
         rows={list.data ?? undefined}
