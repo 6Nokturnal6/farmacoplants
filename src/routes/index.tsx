@@ -53,13 +53,13 @@ function Home() {
             </p>
 
             <div className="mt-10 max-w-2xl mx-auto">
-              <SearchBar scope="compounds" placeholder="Search a compound, plant, or activity…" />
+              <SearchBar scope="all" placeholder="Search a compound, plant, activity, or SMILES…" />
               <p className="text-xs text-muted-foreground mt-3">
-                Try: <Link to="/compounds" search={{ q: "quercetin" } as any} className="underline hover:text-primary">quercetin</Link>
+                Try: <Link to="/search" search={{ q: "quercetin", kind: "all" } as never} className="underline hover:text-primary">quercetin</Link>
                 {" · "}
-                <Link to="/plants" search={{ q: "Catharanthus" } as any} className="underline hover:text-primary">Catharanthus roseus</Link>
+                <Link to="/search" search={{ q: "Catharanthus", kind: "all" } as never} className="underline hover:text-primary">Catharanthus roseus</Link>
                 {" · "}
-                <Link to="/activities" search={{ q: "antimalarial" } as any} className="underline hover:text-primary">antimalarial</Link>
+                <Link to="/search" search={{ q: "antimalarial", kind: "all" } as never} className="underline hover:text-primary">antimalarial</Link>
               </p>
             </div>
           </div>
