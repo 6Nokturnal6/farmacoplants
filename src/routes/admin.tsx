@@ -351,6 +351,9 @@ function RelationManager({
           </button>
         )}
         <StatusBar msg={msg} />
+        <datalist id="plant-parts-vocab">
+          {ALLOWED_PLANT_PARTS.map((p) => <option key={p} value={p} />)}
+        </datalist>
       </div>
     </div>
   );
