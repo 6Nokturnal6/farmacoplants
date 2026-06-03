@@ -155,6 +155,45 @@ async function confirmDelete(label: string, fn: () => Promise<{ error: { message
 
 // ---------- RELATIONSHIP MANAGER ----------
 
+// Controlled vocabulary for plant_part (lowercase, normalized).
+const ALLOWED_PLANT_PARTS = [
+  "leaf", "leaves", "root", "roots", "bark", "stem", "stems",
+  "flower", "flowers", "fruit", "fruits", "seed", "seeds",
+  "rhizome", "tuber", "bulb", "latex", "resin", "wood",
+  "whole plant", "aerial parts", "twig", "twigs", "sap", "exudate", "pericarp",
+];
+
+// Permissive scientific-notation pattern for concentration & potency values.
+const SCI_VALUE_RE = /^[A-Za-z0-9.,%/<>=±≤≥μµ\s()\-+×x*·]+$/;
+
+/** Validate a relationship metadata field. Returns null if valid, else an error string. */
+function validateRelationField(key: string, value: string | boolean): string | null {
+  if (typeof value === "boolean") {
+    return key === "traditional_use" ? null : `${key} must be a string`;
+  }
+  const v = value.trim();
+  if (v === "") return null; // empty allowed → stored as null
+
+  if (key === "plant_part") {
+    if (v.length > 60) return "Plant part is too long (max 60 chars).";
+    if (!ALLOWED_PLANT_PARTS.includes(v.toLowerCase())) {
+      return `Invalid plant part "${v}". Allowed: ${ALLOWED_PLANT_PARTS.slice(0, 8).join(", ")}…`;
+    }
+    return null;
+  }
+  if (key === "concentration" || key === "potency") {
+    if (v.length > 100) return `${key} is too long (max 100 chars).`;
+    if (!SCI_VALUE_RE.test(v)) return `${key} has invalid characters. Use numbers, units (mg, %, μM), comparators (<, >, ±).`;
+    return null;
+  }
+  if (key === "notes") {
+    if (v.length > 500) return "Notes too long (max 500 chars).";
+    return null;
+  }
+  if (v.length > 255) return `${key} is too long (max 255 chars).`;
+  return null;
+}
+
 type RelField = { key: string; label: string; type?: "text" | "checkbox"; placeholder?: string };
 
 type RelationManagerProps = {
@@ -212,8 +251,13 @@ function RelationManager({
     const row: Record<string, unknown> = { [ownerColumn]: ownerId, [targetColumn]: targetId };
     for (const f of extraFields) {
       const v = extra[f.key];
+      const err = validateRelationField(f.key, v);
+      if (err) { setMsg({ kind: "err", text: err }); return; }
       if (f.type === "checkbox") row[f.key] = !!v;
-      else row[f.key] = v ? String(v) : null;
+      else {
+        const s = typeof v === "string" ? v.trim() : "";
+        row[f.key] = s ? s : null;
+      }
     }
     const { error } = await supabase.from(table).insert(row as never);
     if (error) setMsg({ kind: "err", text: error.message });
@@ -294,6 +338,8 @@ function RelationManager({
                   onChange={(e) => setExtra({ ...extra, [f.key]: e.target.value })}
                   placeholder={f.placeholder ?? f.label}
                   className={inputCls + " text-xs"}
+                  list={f.key === "plant_part" ? "plant-parts-vocab" : undefined}
+                  maxLength={f.key === "notes" ? 500 : f.key === "plant_part" ? 60 : 100}
                 />
               ),
             )}
@@ -305,6 +351,9 @@ function RelationManager({
           </button>
         )}
         <StatusBar msg={msg} />
+        <datalist id="plant-parts-vocab">
+          {ALLOWED_PLANT_PARTS.map((p) => <option key={p} value={p} />)}
+        </datalist>
       </div>
     </div>
   );
@@ -736,13 +785,30 @@ function LinkForm() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault(); setMsg(null);
+
+    // Validate per-kind metadata before insert.
+    const checks: Array<[string, string | boolean]> = [];
+    if (kind === "plant_compound") {
+      checks.push(["plant_part", plantPart], ["concentration", extra]);
+    } else if (kind === "compound_activity") {
+      checks.push(["potency", extra]);
+    } else {
+      checks.push(["plant_part", plantPart], ["notes", extra], ["traditional_use", traditional]);
+    }
+    for (const [k, v] of checks) {
+      const err = validateRelationField(k, v);
+      if (err) { setMsg({ kind: "err", text: err }); return; }
+    }
+
+    const partVal = plantPart.trim() || null;
+    const extraVal = extra.trim() || null;
     let error: { message: string } | null = null;
     if (kind === "plant_compound") {
-      ({ error } = await supabase.from("plant_compounds").insert({ plant_id: plantId, compound_id: compoundId, plant_part: plantPart || null, concentration: extra || null }));
+      ({ error } = await supabase.from("plant_compounds").insert({ plant_id: plantId, compound_id: compoundId, plant_part: partVal, concentration: extraVal }));
     } else if (kind === "compound_activity") {
-      ({ error } = await supabase.from("compound_activities").insert({ compound_id: compoundId, activity_id: activityId, potency: extra || null }));
+      ({ error } = await supabase.from("compound_activities").insert({ compound_id: compoundId, activity_id: activityId, potency: extraVal }));
     } else {
-      ({ error } = await supabase.from("plant_activities").insert({ plant_id: plantId, activity_id: activityId, plant_part: plantPart || null, traditional_use: traditional, notes: extra || null }));
+      ({ error } = await supabase.from("plant_activities").insert({ plant_id: plantId, activity_id: activityId, plant_part: partVal, traditional_use: traditional, notes: extraVal }));
     }
     if (error) setMsg({ kind: "err", text: error.message });
     else setMsg({ kind: "ok", text: "Link created." });
@@ -784,18 +850,22 @@ function LinkForm() {
       )}
 
       {(kind === "plant_compound" || kind === "plant_activity") && (
-        <Field label="Plant part"><input value={plantPart} onChange={(e) => setPlantPart(e.target.value)} className={inputCls} placeholder="leaves, root…" /></Field>
+        <Field label="Plant part"><input value={plantPart} onChange={(e) => setPlantPart(e.target.value)} className={inputCls} placeholder="leaves, root…" list="plant-parts-vocab" maxLength={60} /></Field>
       )}
-      {kind === "plant_compound" && <Field label="Concentration / notes"><input value={extra} onChange={(e) => setExtra(e.target.value)} className={inputCls} /></Field>}
-      {kind === "compound_activity" && <Field label="Potency (IC50, MIC…)"><input value={extra} onChange={(e) => setExtra(e.target.value)} className={inputCls} /></Field>}
+      {kind === "plant_compound" && <Field label="Concentration / notes"><input value={extra} onChange={(e) => setExtra(e.target.value)} className={inputCls} maxLength={100} placeholder="0.2 % w/w" /></Field>}
+      {kind === "compound_activity" && <Field label="Potency (IC50, MIC…)"><input value={extra} onChange={(e) => setExtra(e.target.value)} className={inputCls} maxLength={100} placeholder="IC50 12 μM" /></Field>}
       {kind === "plant_activity" && (
         <>
-          <Field label="Notes"><input value={extra} onChange={(e) => setExtra(e.target.value)} className={inputCls} /></Field>
+          <Field label="Notes"><input value={extra} onChange={(e) => setExtra(e.target.value)} className={inputCls} maxLength={500} /></Field>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={traditional} onChange={(e) => setTraditional(e.target.checked)} /> Traditional / ethnobotanical use
           </label>
         </>
       )}
+      <datalist id="plant-parts-vocab">
+        {ALLOWED_PLANT_PARTS.map((p) => <option key={p} value={p} />)}
+      </datalist>
+
 
       <button className="px-5 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90">Create link</button>
       <StatusBar msg={msg} />
