@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SearchRouteImport } from './routes/search'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
@@ -20,6 +21,11 @@ import { Route as PlantsIdRouteImport } from './routes/plants.$id'
 import { Route as CompoundsIdRouteImport } from './routes/compounds.$id'
 import { Route as ActivitiesIdRouteImport } from './routes/activities.$id'
 
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
+  '/search': typeof SearchRoute
   '/activities/$id': typeof ActivitiesIdRoute
   '/compounds/$id': typeof CompoundsIdRoute
   '/plants/$id': typeof PlantsIdRoute
@@ -87,6 +94,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
+  '/search': typeof SearchRoute
   '/activities/$id': typeof ActivitiesIdRoute
   '/compounds/$id': typeof CompoundsIdRoute
   '/plants/$id': typeof PlantsIdRoute
@@ -100,6 +108,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
+  '/search': typeof SearchRoute
   '/activities/$id': typeof ActivitiesIdRoute
   '/compounds/$id': typeof CompoundsIdRoute
   '/plants/$id': typeof PlantsIdRoute
@@ -114,6 +123,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/login'
+    | '/search'
     | '/activities/$id'
     | '/compounds/$id'
     | '/plants/$id'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/login'
+    | '/search'
     | '/activities/$id'
     | '/compounds/$id'
     | '/plants/$id'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/login'
+    | '/search'
     | '/activities/$id'
     | '/compounds/$id'
     | '/plants/$id'
@@ -151,6 +163,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   LoginRoute: typeof LoginRoute
+  SearchRoute: typeof SearchRoute
   ActivitiesIdRoute: typeof ActivitiesIdRoute
   CompoundsIdRoute: typeof CompoundsIdRoute
   PlantsIdRoute: typeof PlantsIdRoute
@@ -162,6 +175,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -239,6 +259,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   LoginRoute: LoginRoute,
+  SearchRoute: SearchRoute,
   ActivitiesIdRoute: ActivitiesIdRoute,
   CompoundsIdRoute: CompoundsIdRoute,
   PlantsIdRoute: PlantsIdRoute,
@@ -250,3 +271,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
