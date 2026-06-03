@@ -118,9 +118,9 @@ function SearchPage() {
   });
 
   const setKind = (k: (typeof KINDS)[number]["id"]) =>
-    navigate({ search: (prev) => ({ ...prev, kind: k }) });
+    navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, kind: k }) });
   const setCategory = (c: string | undefined) =>
-    navigate({ search: (prev) => ({ ...prev, category: c || undefined }) });
+    navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, category: c || undefined }) });
 
   const counts = {
     plants: plants.data?.length ?? 0,
