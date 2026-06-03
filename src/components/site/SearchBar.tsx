@@ -2,12 +2,27 @@ import { useNavigate } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
-export function SearchBar({ scope = "compounds", placeholder, className }: { scope?: "compounds" | "plants" | "activities" | "citations"; placeholder?: string; className?: string }) {
+type Scope = "all" | "compounds" | "plants" | "activities" | "citations";
+
+export function SearchBar({
+  scope = "all",
+  placeholder,
+  className,
+}: {
+  scope?: Scope;
+  placeholder?: string;
+  className?: string;
+}) {
   const navigate = useNavigate();
   const [q, setQ] = useState("");
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    navigate({ to: `/${scope}`, search: { q: q.trim() || undefined } as any });
+    const term = q.trim() || undefined;
+    if (scope === "all") {
+      navigate({ to: "/search", search: { q: term, kind: "all" } as never });
+    } else {
+      navigate({ to: `/${scope}`, search: { q: term } as never });
+    }
   };
   return (
     <form onSubmit={submit} className={"flex items-stretch gap-0 " + (className ?? "")}>
