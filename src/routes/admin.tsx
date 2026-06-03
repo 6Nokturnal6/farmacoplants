@@ -785,13 +785,30 @@ function LinkForm() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault(); setMsg(null);
+
+    // Validate per-kind metadata before insert.
+    const checks: Array<[string, string | boolean]> = [];
+    if (kind === "plant_compound") {
+      checks.push(["plant_part", plantPart], ["concentration", extra]);
+    } else if (kind === "compound_activity") {
+      checks.push(["potency", extra]);
+    } else {
+      checks.push(["plant_part", plantPart], ["notes", extra], ["traditional_use", traditional]);
+    }
+    for (const [k, v] of checks) {
+      const err = validateRelationField(k, v);
+      if (err) { setMsg({ kind: "err", text: err }); return; }
+    }
+
+    const partVal = plantPart.trim() || null;
+    const extraVal = extra.trim() || null;
     let error: { message: string } | null = null;
     if (kind === "plant_compound") {
-      ({ error } = await supabase.from("plant_compounds").insert({ plant_id: plantId, compound_id: compoundId, plant_part: plantPart || null, concentration: extra || null }));
+      ({ error } = await supabase.from("plant_compounds").insert({ plant_id: plantId, compound_id: compoundId, plant_part: partVal, concentration: extraVal }));
     } else if (kind === "compound_activity") {
-      ({ error } = await supabase.from("compound_activities").insert({ compound_id: compoundId, activity_id: activityId, potency: extra || null }));
+      ({ error } = await supabase.from("compound_activities").insert({ compound_id: compoundId, activity_id: activityId, potency: extraVal }));
     } else {
-      ({ error } = await supabase.from("plant_activities").insert({ plant_id: plantId, activity_id: activityId, plant_part: plantPart || null, traditional_use: traditional, notes: extra || null }));
+      ({ error } = await supabase.from("plant_activities").insert({ plant_id: plantId, activity_id: activityId, plant_part: partVal, traditional_use: traditional, notes: extraVal }));
     }
     if (error) setMsg({ kind: "err", text: error.message });
     else setMsg({ kind: "ok", text: "Link created." });
