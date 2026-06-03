@@ -338,6 +338,8 @@ function RelationManager({
                   onChange={(e) => setExtra({ ...extra, [f.key]: e.target.value })}
                   placeholder={f.placeholder ?? f.label}
                   className={inputCls + " text-xs"}
+                  list={f.key === "plant_part" ? "plant-parts-vocab" : undefined}
+                  maxLength={f.key === "notes" ? 500 : f.key === "plant_part" ? 60 : 100}
                 />
               ),
             )}
