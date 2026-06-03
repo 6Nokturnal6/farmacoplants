@@ -251,8 +251,13 @@ function RelationManager({
     const row: Record<string, unknown> = { [ownerColumn]: ownerId, [targetColumn]: targetId };
     for (const f of extraFields) {
       const v = extra[f.key];
+      const err = validateRelationField(f.key, v);
+      if (err) { setMsg({ kind: "err", text: err }); return; }
       if (f.type === "checkbox") row[f.key] = !!v;
-      else row[f.key] = v ? String(v) : null;
+      else {
+        const s = typeof v === "string" ? v.trim() : "";
+        row[f.key] = s ? s : null;
+      }
     }
     const { error } = await supabase.from(table).insert(row as never);
     if (error) setMsg({ kind: "err", text: error.message });
