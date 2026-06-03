@@ -850,18 +850,22 @@ function LinkForm() {
       )}
 
       {(kind === "plant_compound" || kind === "plant_activity") && (
-        <Field label="Plant part"><input value={plantPart} onChange={(e) => setPlantPart(e.target.value)} className={inputCls} placeholder="leaves, root…" /></Field>
+        <Field label="Plant part"><input value={plantPart} onChange={(e) => setPlantPart(e.target.value)} className={inputCls} placeholder="leaves, root…" list="plant-parts-vocab" maxLength={60} /></Field>
       )}
-      {kind === "plant_compound" && <Field label="Concentration / notes"><input value={extra} onChange={(e) => setExtra(e.target.value)} className={inputCls} /></Field>}
-      {kind === "compound_activity" && <Field label="Potency (IC50, MIC…)"><input value={extra} onChange={(e) => setExtra(e.target.value)} className={inputCls} /></Field>}
+      {kind === "plant_compound" && <Field label="Concentration / notes"><input value={extra} onChange={(e) => setExtra(e.target.value)} className={inputCls} maxLength={100} placeholder="0.2 % w/w" /></Field>}
+      {kind === "compound_activity" && <Field label="Potency (IC50, MIC…)"><input value={extra} onChange={(e) => setExtra(e.target.value)} className={inputCls} maxLength={100} placeholder="IC50 12 μM" /></Field>}
       {kind === "plant_activity" && (
         <>
-          <Field label="Notes"><input value={extra} onChange={(e) => setExtra(e.target.value)} className={inputCls} /></Field>
+          <Field label="Notes"><input value={extra} onChange={(e) => setExtra(e.target.value)} className={inputCls} maxLength={500} /></Field>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={traditional} onChange={(e) => setTraditional(e.target.checked)} /> Traditional / ethnobotanical use
           </label>
         </>
       )}
+      <datalist id="plant-parts-vocab">
+        {ALLOWED_PLANT_PARTS.map((p) => <option key={p} value={p} />)}
+      </datalist>
+
 
       <button className="px-5 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90">Create link</button>
       <StatusBar msg={msg} />
