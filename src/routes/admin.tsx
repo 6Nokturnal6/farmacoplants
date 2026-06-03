@@ -155,6 +155,45 @@ async function confirmDelete(label: string, fn: () => Promise<{ error: { message
 
 // ---------- RELATIONSHIP MANAGER ----------
 
+// Controlled vocabulary for plant_part (lowercase, normalized).
+const ALLOWED_PLANT_PARTS = [
+  "leaf", "leaves", "root", "roots", "bark", "stem", "stems",
+  "flower", "flowers", "fruit", "fruits", "seed", "seeds",
+  "rhizome", "tuber", "bulb", "latex", "resin", "wood",
+  "whole plant", "aerial parts", "twig", "twigs", "sap", "exudate", "pericarp",
+];
+
+// Permissive scientific-notation pattern for concentration & potency values.
+const SCI_VALUE_RE = /^[A-Za-z0-9.,%/<>=±≤≥μµ\s()\-+×x*·]+$/;
+
+/** Validate a relationship metadata field. Returns null if valid, else an error string. */
+function validateRelationField(key: string, value: string | boolean): string | null {
+  if (typeof value === "boolean") {
+    return key === "traditional_use" ? null : `${key} must be a string`;
+  }
+  const v = value.trim();
+  if (v === "") return null; // empty allowed → stored as null
+
+  if (key === "plant_part") {
+    if (v.length > 60) return "Plant part is too long (max 60 chars).";
+    if (!ALLOWED_PLANT_PARTS.includes(v.toLowerCase())) {
+      return `Invalid plant part "${v}". Allowed: ${ALLOWED_PLANT_PARTS.slice(0, 8).join(", ")}…`;
+    }
+    return null;
+  }
+  if (key === "concentration" || key === "potency") {
+    if (v.length > 100) return `${key} is too long (max 100 chars).`;
+    if (!SCI_VALUE_RE.test(v)) return `${key} has invalid characters. Use numbers, units (mg, %, μM), comparators (<, >, ±).`;
+    return null;
+  }
+  if (key === "notes") {
+    if (v.length > 500) return "Notes too long (max 500 chars).";
+    return null;
+  }
+  if (v.length > 255) return `${key} is too long (max 255 chars).`;
+  return null;
+}
+
 type RelField = { key: string; label: string; type?: "text" | "checkbox"; placeholder?: string };
 
 type RelationManagerProps = {
