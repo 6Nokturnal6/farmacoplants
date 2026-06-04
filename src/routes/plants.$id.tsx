@@ -46,7 +46,7 @@ function PlantDetail() {
             <div className="mt-1 text-muted-foreground text-sm">{p.family}{p.genus ? ` · ${p.genus}` : ""}</div>
 
             <div className="grid md:grid-cols-2 gap-6 mt-8">
-              {p.image_url && <img src={p.image_url} alt={p.scientific_name} className="w-full rounded-lg border border-border bg-card" />}
+              {p.image_url && <PlantImage value={p.image_url} alt={p.scientific_name} className="w-full rounded-lg border border-border bg-card" />}
               <div className="space-y-4">
                 {p.common_names?.length ? <Field label="Common names" value={p.common_names.join(", ")} /> : null}
                 {p.local_names?.length ? <Field label="Local names" value={p.local_names.join(", ")} /> : null}
