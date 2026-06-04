@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { Pencil, Trash2, X } from "lucide-react";
+import { PlantImage, uploadPlantImage } from "@/lib/plant-image";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — FarmacoPlants" }] }),
@@ -557,7 +558,36 @@ function PlantsTab({ userId }: { userId: string }) {
             <Field label="Plant parts (comma-separated)"><input value={f.plant_parts} onChange={(e) => setF({ ...f, plant_parts: e.target.value })} className={inputCls} placeholder="leaves, root, bark" /></Field>
           </div>
           <Field label="Habitat"><input value={f.habitat} onChange={(e) => setF({ ...f, habitat: e.target.value })} className={inputCls} /></Field>
-          <Field label="Image URL"><input value={f.image_url} onChange={(e) => setF({ ...f, image_url: e.target.value })} className={inputCls} /></Field>
+          <Field label="Image">
+            <div className="space-y-2">
+              <input value={f.image_url} onChange={(e) => setF({ ...f, image_url: e.target.value })} className={inputCls} placeholder="https://… or uploaded path" />
+              <div className="flex items-center gap-3">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      setMsg({ kind: "ok", text: "Uploading image…" });
+                      const path = await uploadPlantImage(file);
+                      setF((prev) => ({ ...prev, image_url: path }));
+                      setMsg({ kind: "ok", text: "Image uploaded. Save to apply." });
+                    } catch (err: any) {
+                      setMsg({ kind: "err", text: err?.message ?? "Upload failed" });
+                    } finally {
+                      e.target.value = "";
+                    }
+                  }}
+                  className="text-xs"
+                />
+                {f.image_url && <button type="button" onClick={() => setF({ ...f, image_url: "" })} className="text-xs text-muted-foreground hover:text-destructive">clear</button>}
+              </div>
+              {f.image_url && (
+                <PlantImage value={f.image_url} alt="preview" className="mt-2 max-h-40 rounded border border-border" />
+              )}
+            </div>
+          </Field>
           <Field label="Description"><textarea rows={3} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} className={inputCls} /></Field>
           <SubmitRow editing={!!editing} label="plant" />
           <StatusBar msg={msg} />
