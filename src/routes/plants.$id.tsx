@@ -4,6 +4,9 @@ import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { PlantImage } from "@/lib/plant-image";
+import { fetchPlantProfile, downloadPlantPdf, downloadPlantBibtex } from "@/lib/plant-export";
+import { useState } from "react";
+import { Download, FileText } from "lucide-react";
 
 export const Route = createFileRoute("/plants/$id")({
   head: () => ({ meta: [{ title: "Plant — FarmacoPlants" }] }),
@@ -45,6 +48,7 @@ function PlantDetail() {
             <div className="text-xs text-muted-foreground"><Link to="/plants" className="hover:underline">Plants</Link> / {p.scientific_name}</div>
             <h1 className="font-display text-4xl italic font-semibold mt-2">{p.scientific_name}</h1>
             <div className="mt-1 text-muted-foreground text-sm">{p.family}{p.genus ? ` · ${p.genus}` : ""}</div>
+            <ExportButtons plantId={p.id} />
 
             <div className="grid md:grid-cols-2 gap-6 mt-8">
               {p.image_url && <PlantImage value={p.image_url} alt={p.scientific_name} className="w-full rounded-lg border border-border bg-card" />}
@@ -105,4 +109,32 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 function Empty({ children }: { children: React.ReactNode }) {
   return <div className="text-sm text-muted-foreground border border-dashed border-border rounded-lg p-6 text-center">{children}</div>;
+}
+
+function ExportButtons({ plantId }: { plantId: string }) {
+  const [busy, setBusy] = useState<null | "pdf" | "bib">(null);
+  const run = async (kind: "pdf" | "bib") => {
+    setBusy(kind);
+    try {
+      const profile = await fetchPlantProfile(plantId);
+      if (kind === "pdf") downloadPlantPdf(profile);
+      else downloadPlantBibtex(profile);
+    } catch (e) {
+      console.error(e);
+      alert("Export failed. Please try again.");
+    } finally {
+      setBusy(null);
+    }
+  };
+  const btn = "inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded-md border border-border bg-card hover:border-primary/50 hover:text-primary transition-colors disabled:opacity-50";
+  return (
+    <div className="mt-4 flex flex-wrap gap-2">
+      <button type="button" onClick={() => run("pdf")} disabled={busy !== null} className={btn}>
+        <FileText className="h-4 w-4" />{busy === "pdf" ? "Preparing…" : "Download profile (PDF)"}
+      </button>
+      <button type="button" onClick={() => run("bib")} disabled={busy !== null} className={btn}>
+        <Download className="h-4 w-4" />{busy === "bib" ? "Preparing…" : "References (BibTeX)"}
+      </button>
+    </div>
+  );
 }
