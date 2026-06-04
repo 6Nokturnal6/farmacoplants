@@ -569,12 +569,12 @@ function PlantsTab({ userId }: { userId: string }) {
                     const file = e.target.files?.[0];
                     if (!file) return;
                     try {
-                      setMsg("Uploading image…");
+                      setMsg({ kind: "ok", text: "Uploading image…" });
                       const path = await uploadPlantImage(file);
                       setF((prev) => ({ ...prev, image_url: path }));
-                      setMsg("Image uploaded. Save to apply.");
+                      setMsg({ kind: "ok", text: "Image uploaded. Save to apply." });
                     } catch (err: any) {
-                      setMsg(err?.message ?? "Upload failed");
+                      setMsg({ kind: "err", text: err?.message ?? "Upload failed" });
                     } finally {
                       e.target.value = "";
                     }
