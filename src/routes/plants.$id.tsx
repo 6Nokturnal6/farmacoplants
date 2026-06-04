@@ -110,3 +110,31 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Empty({ children }: { children: React.ReactNode }) {
   return <div className="text-sm text-muted-foreground border border-dashed border-border rounded-lg p-6 text-center">{children}</div>;
 }
+
+function ExportButtons({ plantId }: { plantId: string }) {
+  const [busy, setBusy] = useState<null | "pdf" | "bib">(null);
+  const run = async (kind: "pdf" | "bib") => {
+    setBusy(kind);
+    try {
+      const profile = await fetchPlantProfile(plantId);
+      if (kind === "pdf") downloadPlantPdf(profile);
+      else downloadPlantBibtex(profile);
+    } catch (e) {
+      console.error(e);
+      alert("Export failed. Please try again.");
+    } finally {
+      setBusy(null);
+    }
+  };
+  const btn = "inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded-md border border-border bg-card hover:border-primary/50 hover:text-primary transition-colors disabled:opacity-50";
+  return (
+    <div className="mt-4 flex flex-wrap gap-2">
+      <button type="button" onClick={() => run("pdf")} disabled={busy !== null} className={btn}>
+        <FileText className="h-4 w-4" />{busy === "pdf" ? "Preparing…" : "Download profile (PDF)"}
+      </button>
+      <button type="button" onClick={() => run("bib")} disabled={busy !== null} className={btn}>
+        <Download className="h-4 w-4" />{busy === "bib" ? "Preparing…" : "References (BibTeX)"}
+      </button>
+    </div>
+  );
+}
