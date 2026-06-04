@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { Pencil, Trash2, X } from "lucide-react";
+import { PlantImage, uploadPlantImage } from "@/lib/plant-image";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — FarmacoPlants" }] }),
