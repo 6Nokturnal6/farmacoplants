@@ -48,6 +48,7 @@ function PlantDetail() {
             <div className="text-xs text-muted-foreground"><Link to="/plants" className="hover:underline">Plants</Link> / {p.scientific_name}</div>
             <h1 className="font-display text-4xl italic font-semibold mt-2">{p.scientific_name}</h1>
             <div className="mt-1 text-muted-foreground text-sm">{p.family}{p.genus ? ` · ${p.genus}` : ""}</div>
+            <ExportButtons plantId={p.id} />
 
             <div className="grid md:grid-cols-2 gap-6 mt-8">
               {p.image_url && <PlantImage value={p.image_url} alt={p.scientific_name} className="w-full rounded-lg border border-border bg-card" />}
