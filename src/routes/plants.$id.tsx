@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { supabase } from "@/integrations/supabase/client";
+import { PlantImage } from "@/lib/plant-image";
 
 export const Route = createFileRoute("/plants/$id")({
   head: () => ({ meta: [{ title: "Plant — FarmacoPlants" }] }),
