@@ -4,6 +4,10 @@ import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { PlantImage } from "@/lib/plant-image";
+import { fetchPlantProfile, downloadPlantPdf, downloadPlantBibtex } from "@/lib/plant-export";
+import { useState } from "react";
+import { Download, FileText } from "lucide-react";
+import { PlantImage } from "@/lib/plant-image";
 
 export const Route = createFileRoute("/plants/$id")({
   head: () => ({ meta: [{ title: "Plant — FarmacoPlants" }] }),
