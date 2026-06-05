@@ -12,4 +12,9 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Switch nitro target based on deploy host.
+  // On Vercel, set env var BUILD_PRESET=vercel (Vercel sets VERCEL=1 automatically too).
+  nitro: {
+    preset: process.env.VERCEL ? "vercel" : process.env.BUILD_PRESET ?? "cloudflare-module",
+  },
 });
