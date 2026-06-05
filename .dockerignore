@@ -1,0 +1,16 @@
+node_modules
+.output
+.nitro
+dist
+.git
+.vscode
+.idea
+.env
+.env.local
+*.log
+.DS_Store
+/tmp
+/mnt
+.workspace
+.agents
+.claude
