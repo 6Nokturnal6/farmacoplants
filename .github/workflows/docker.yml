@@ -1,0 +1,80 @@
+name: Build & Smoke Test Docker Image
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  build-and-smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          load: true
+          tags: lqsa-app:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VITE_SUPABASE_URL=https://dszglgrgrmojshuohcpn.supabase.co
+            VITE_SUPABASE_PUBLISHABLE_KEY=${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzemdsZ3Jncm1vanNodW9oY3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNjM2ODIsImV4cCI6MjA5NTczOTY4Mn0.qUJt97EZaHv4lwAu_XLZtQgQZz0oU0JuQq9lCgdz7H4' }}
+            VITE_SUPABASE_PROJECT_ID=dszglgrgrmojshuohcpn
+
+      - name: Run container
+        run: |
+          docker run -d --name lqsa-smoke \
+            -p 3000:3000 \
+            -e SUPABASE_URL=https://dszglgrgrmojshuohcpn.supabase.co \
+            -e SUPABASE_PUBLISHABLE_KEY="${{ secrets.SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzemdsZ3Jncm1vanNodW9oY3BuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNjM2ODIsImV4cCI6MjA5NTczOTY4Mn0.qUJt97EZaHv4lwAu_XLZtQgQZz0oU0JuQq9lCgdz7H4' }}" \
+            -e SUPABASE_SERVICE_ROLE_KEY="${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-not-used-by-smoke-test' }}" \
+            lqsa-app:ci
+
+      - name: Wait for server to be ready
+        run: |
+          for i in {1..30}; do
+            if curl -sSf -o /dev/null http://127.0.0.1:3000; then
+              echo "Server is up (attempt $i)"
+              exit 0
+            fi
+            echo "Waiting for server... ($i/30)"
+            sleep 2
+          done
+          echo "Server failed to start in time"
+          docker logs lqsa-smoke
+          exit 1
+
+      - name: Smoke test — homepage returns 200
+        run: |
+          STATUS=$(curl -s -o /tmp/body.html -w "%{http_code}" http://127.0.0.1:3000/)
+          echo "HTTP status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Expected 200, got $STATUS"
+            docker logs lqsa-smoke
+            exit 1
+          fi
+          if ! grep -qi "<html" /tmp/body.html; then
+            echo "Response body does not contain <html>"
+            head -c 2000 /tmp/body.html
+            exit 1
+          fi
+          echo "Smoke test passed"
+
+      - name: Container logs (on failure)
+        if: failure()
+        run: docker logs lqsa-smoke || true
+
+      - name: Stop container
+        if: always()
+        run: docker rm -f lqsa-smoke || true
