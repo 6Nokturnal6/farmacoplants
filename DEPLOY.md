@@ -13,8 +13,8 @@ container.
 ## 2. Get the code onto the server
 
 ```bash
-git clone https://github.com/<your-user>/<your-repo>.git lqsa
-cd lqsa
+git clone https://github.com/<your-user>/<your-repo>.git farmacoplants
+cd farmacoplants
 cp .env.example .env
 # edit .env with real Supabase keys (service role is server-only, keep it secret)
 ```
@@ -48,7 +48,7 @@ lqsa.unilurio.ac.mz {
 
 ### Option B — Nginx + certbot
 
-`/etc/nginx/sites-available/lqsa.conf`:
+`/etc/nginx/sites-available/farmacoplants.conf`:
 
 ```nginx
 server {
@@ -69,7 +69,7 @@ server {
 ```
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/lqsa.conf /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/farmacoplants.conf /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 sudo certbot --nginx -d lqsa.unilurio.ac.mz
 ```
