@@ -1,4 +1,4 @@
-# Self-hosting on lqsa.unilurio.ac.mz
+# Self-hosting on farmacoplants.unilurio.ac.mz
 
 This app is packaged as a Docker image running a Node.js server (TanStack Start
 built with nitro's `node-server` preset). It listens on port `3000` inside the
@@ -8,7 +8,7 @@ container.
 
 - Docker 24+ and Docker Compose v2 (`docker compose ...`)
 - A reverse proxy in front of port 3000 to terminate TLS for
-  `https://lqsa.unilurio.ac.mz` — examples below for Nginx and Caddy.
+  `https://farmacoplants.unilurio.ac.mz` — examples below for Nginx and Caddy.
 
 ## 2. Get the code onto the server
 
@@ -39,7 +39,7 @@ curl -I http://127.0.0.1:3000
 `/etc/caddy/Caddyfile`:
 
 ```
-lqsa.unilurio.ac.mz {
+farmacoplants.unilurio.ac.mz {
     reverse_proxy 127.0.0.1:3000
 }
 ```
@@ -53,7 +53,7 @@ lqsa.unilurio.ac.mz {
 ```nginx
 server {
     listen 80;
-    server_name lqsa.unilurio.ac.mz;
+    server_name farmacoplants.unilurio.ac.mz;
 
     location / {
         proxy_pass http://127.0.0.1:3000;
@@ -71,13 +71,13 @@ server {
 ```bash
 sudo ln -s /etc/nginx/sites-available/farmacoplants.conf /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d lqsa.unilurio.ac.mz
+sudo certbot --nginx -d farmacoplants.unilurio.ac.mz
 ```
 
 ## 5. Update Supabase auth URLs
 
 In the Supabase dashboard → Authentication → URL Configuration, add
-`https://lqsa.unilurio.ac.mz` to **Site URL** and **Redirect URLs**.
+`https://farmacoplants.unilurio.ac.mz` to **Site URL** and **Redirect URLs**.
 Otherwise Google / email-confirmation links will fail.
 
 ## 6. Updating after a code change
