@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+
 import { useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/site/Header";
@@ -71,6 +72,11 @@ function Login() {
           <button onClick={() => setMode(mode === "signin" ? "signup" : "signin")} className="mt-4 w-full text-sm text-muted-foreground hover:text-primary">
             {mode === "signin" ? "Need an account? Create one" : "Already have an account? Sign in"}
           </button>
+          {mode === "signin" && (
+            <div className="text-center mt-2">
+              <Link to="/forgot-password" className="text-xs text-muted-foreground hover:text-primary">Forgot password?</Link>
+            </div>
+          )}
           <div className="text-center mt-6"><Link to="/" className="text-xs text-muted-foreground hover:text-foreground">← Back to home</Link></div>
         </div>
       </main>
