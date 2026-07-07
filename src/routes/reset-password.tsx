@@ -3,7 +3,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
-import { Leaf } from "lucide-react";
+import unilurioLogo from "@/assets/unilurio-logo.jpg.asset.json";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({ meta: [{ title: "Set new password — FarmacoPlants" }] }),
@@ -55,9 +55,7 @@ function ResetPassword() {
       <main className="flex-1 grid place-items-center px-4 py-12">
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">
-            <span className="grid place-items-center h-12 w-12 mx-auto rounded-md bg-primary text-primary-foreground">
-              <Leaf className="h-5 w-5" />
-            </span>
+            <img src={unilurioLogo.url} alt="Universidade Lúrio" className="h-16 w-16 mx-auto object-contain" />
             <h1 className="font-display text-3xl font-semibold mt-4">Set new password</h1>
             <p className="text-sm text-muted-foreground mt-1">Choose a new password for your account</p>
           </div>
