@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
+import { friendlyAuthError } from "@/lib/auth-errors";
 import unilurioLogo from "@/assets/unilurio-logo.jpg.asset.json";
 
 export const Route = createFileRoute("/forgot-password")({
@@ -10,24 +11,43 @@ export const Route = createFileRoute("/forgot-password")({
   component: ForgotPassword,
 });
 
+const COOLDOWN_SECONDS = 60;
+const COOLDOWN_KEY = "fp:reset-cooldown-until";
+
 function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    const tick = () => {
+      const until = Number(localStorage.getItem(COOLDOWN_KEY) ?? 0);
+      setCooldown(Math.max(0, Math.ceil((until - Date.now()) / 1000)));
+    };
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [sent]);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (cooldown > 0) {
+      setError(`Please wait ${cooldown}s before requesting another link.`);
+      return;
+    }
     setLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) throw error;
+      localStorage.setItem(COOLDOWN_KEY, String(Date.now() + COOLDOWN_SECONDS * 1000));
       setSent(true);
-    } catch (err: any) {
-      setError(err.message ?? "Could not send reset email");
+    } catch (err) {
+      setError(friendlyAuthError(err));
     } finally {
       setLoading(false);
     }
@@ -59,10 +79,10 @@ function ForgotPassword() {
               />
               {error && <div className="text-sm text-destructive">{error}</div>}
               <button
-                disabled={loading}
+                disabled={loading || cooldown > 0}
                 className="w-full py-2 rounded-md bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 disabled:opacity-50"
               >
-                {loading ? "…" : "Send reset link"}
+                {loading ? "…" : cooldown > 0 ? `Wait ${cooldown}s` : "Send reset link"}
               </button>
             </form>
           )}
