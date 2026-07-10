@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
+import { friendlyAuthError } from "@/lib/auth-errors";
 import unilurioLogo from "@/assets/unilurio-logo.jpg.asset.json";
 
 export const Route = createFileRoute("/login")({
@@ -39,8 +40,8 @@ function Login() {
         if (error) throw error;
       }
       navigate({ to: "/" });
-    } catch (err: any) {
-      setError(err.message ?? "Auth failed");
+    } catch (err) {
+      setError(friendlyAuthError(err));
     } finally {
       setLoading(false);
     }
