@@ -20,6 +20,10 @@ declare global {
 
 export function reportLovableError(error: unknown, context: Record<string, unknown> = {}) {
   if (typeof window === "undefined") return;
+  // Forward to Sentry if configured (no-op otherwise).
+  import("./sentry").then(({ Sentry }) => {
+    try { Sentry.captureException(error, { extra: context }); } catch { /* ignore */ }
+  }).catch(() => { /* ignore */ });
   window.__lovableEvents?.captureException?.(
     error,
     {
