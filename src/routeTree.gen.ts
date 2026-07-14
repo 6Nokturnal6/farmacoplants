@@ -21,6 +21,7 @@ import { Route as CitationsIndexRouteImport } from './routes/citations.index'
 import { Route as ActivitiesIndexRouteImport } from './routes/activities.index'
 import { Route as PlantsIdRouteImport } from './routes/plants.$id'
 import { Route as CompoundsIdRouteImport } from './routes/compounds.$id'
+import { Route as AdminAuditRouteImport } from './routes/admin_.audit'
 import { Route as ActivitiesIdRouteImport } from './routes/activities.$id'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 
@@ -84,6 +85,11 @@ const CompoundsIdRoute = CompoundsIdRouteImport.update({
   path: '/compounds/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminAuditRoute = AdminAuditRouteImport.update({
+  id: '/admin_/audit',
+  path: '/admin/audit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ActivitiesIdRoute = ActivitiesIdRouteImport.update({
   id: '/activities/$id',
   path: '/activities/$id',
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
   '/activities/$id': typeof ActivitiesIdRoute
+  '/admin/audit': typeof AdminAuditRoute
   '/compounds/$id': typeof CompoundsIdRoute
   '/plants/$id': typeof PlantsIdRoute
   '/activities/': typeof ActivitiesIndexRoute
@@ -119,6 +126,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
   '/activities/$id': typeof ActivitiesIdRoute
+  '/admin/audit': typeof AdminAuditRoute
   '/compounds/$id': typeof CompoundsIdRoute
   '/plants/$id': typeof PlantsIdRoute
   '/activities': typeof ActivitiesIndexRoute
@@ -136,6 +144,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
   '/activities/$id': typeof ActivitiesIdRoute
+  '/admin_/audit': typeof AdminAuditRoute
   '/compounds/$id': typeof CompoundsIdRoute
   '/plants/$id': typeof PlantsIdRoute
   '/activities/': typeof ActivitiesIndexRoute
@@ -154,6 +163,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/search'
     | '/activities/$id'
+    | '/admin/audit'
     | '/compounds/$id'
     | '/plants/$id'
     | '/activities/'
@@ -170,6 +180,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/search'
     | '/activities/$id'
+    | '/admin/audit'
     | '/compounds/$id'
     | '/plants/$id'
     | '/activities'
@@ -186,6 +197,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/search'
     | '/activities/$id'
+    | '/admin_/audit'
     | '/compounds/$id'
     | '/plants/$id'
     | '/activities/'
@@ -203,6 +215,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SearchRoute: typeof SearchRoute
   ActivitiesIdRoute: typeof ActivitiesIdRoute
+  AdminAuditRoute: typeof AdminAuditRoute
   CompoundsIdRoute: typeof CompoundsIdRoute
   PlantsIdRoute: typeof PlantsIdRoute
   ActivitiesIndexRoute: typeof ActivitiesIndexRoute
@@ -298,6 +311,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CompoundsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin_/audit': {
+      id: '/admin_/audit'
+      path: '/admin/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AdminAuditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/activities/$id': {
       id: '/activities/$id'
       path: '/activities/$id'
@@ -323,6 +343,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SearchRoute: SearchRoute,
   ActivitiesIdRoute: ActivitiesIdRoute,
+  AdminAuditRoute: AdminAuditRoute,
   CompoundsIdRoute: CompoundsIdRoute,
   PlantsIdRoute: PlantsIdRoute,
   ActivitiesIndexRoute: ActivitiesIndexRoute,

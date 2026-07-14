@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,8 +63,13 @@ function Admin() {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 mx-auto max-w-5xl w-full px-6 py-10">
-        <h1 className="font-display text-4xl font-semibold">Curation</h1>
-        <p className="text-muted-foreground mt-2">Create, edit and delete records.</p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="font-display text-4xl font-semibold">Curation</h1>
+            <p className="text-muted-foreground mt-2">Create, edit and delete records.</p>
+          </div>
+          <Link to="/admin/audit" className="text-sm underline text-muted-foreground hover:text-foreground shrink-0 mt-2">Audit log →</Link>
+        </div>
 
         <div className="mt-6 flex gap-1 border-b border-border">
           {tabs.map((t) => (
