@@ -93,17 +93,44 @@ The compose file ships an **Uptime Kuma** container bound to
 `127.0.0.1:3001`. Expose it on a subdomain via your reverse proxy, then
 configure a monitor pointing at the app's `/api/public/health` endpoint.
 
-### Reverse proxy
+### Reverse proxy (with HTTP basic auth)
 
-**Caddy:**
+Port `3001` stays bound to `127.0.0.1` — the dashboard is only reachable
+through the reverse proxy, which enforces a shared basic-auth gate in front
+of Kuma's own login. Two independent credentials to compromise, and
+unauthenticated scanners never reach Kuma at all.
+
+**1. Generate a bcrypt hash for the basic-auth password:**
+
+```bash
+# Caddy (run inside the caddy container/binary):
+caddy hash-password
+# paste the password twice; copy the $2a$14$... hash it prints
+
+# Nginx alternative — writes /etc/nginx/.htpasswd_status:
+sudo htpasswd -B -c /etc/nginx/.htpasswd_status status_admin
+```
+
+Pick a strong password (a password manager or `openssl rand -base64 24`).
+Do NOT reuse the Kuma admin password.
+
+**2. Caddy:**
 
 ```
 status.farmacoplants.unilurio.ac.mz {
+    basic_auth {
+        # username followed by the bcrypt hash from `caddy hash-password`
+        status_admin $2a$14$REPLACE_WITH_HASH_FROM_caddy_hash-password
+    }
     reverse_proxy 127.0.0.1:3001
 }
 ```
 
-**Nginx** (add a second server block, then run certbot for the subdomain):
+Reload with `sudo systemctl reload caddy`. Caddy's `reverse_proxy` upgrades
+WebSockets automatically, so Kuma's live heartbeat UI keeps working through
+the basic-auth gate.
+
+**3. Nginx** (add a second server block, then run certbot for the subdomain):
 
 ```nginx
 server {
@@ -111,6 +138,9 @@ server {
     server_name status.farmacoplants.unilurio.ac.mz;
 
     location / {
+        auth_basic           "farmacoPlants status";
+        auth_basic_user_file /etc/nginx/.htpasswd_status;
+
         proxy_pass http://127.0.0.1:3001;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
@@ -124,7 +154,13 @@ server {
 ```
 
 Point a DNS `A` record for `status.farmacoplants.unilurio.ac.mz` at the
-server before reloading the proxy so TLS issuance succeeds.
+server before reloading the proxy so TLS issuance (and the basic-auth
+prompt over HTTPS) works.
+
+> If you later publish a Kuma **Status Page** for public consumption, move
+> it to a separate subdomain (e.g. `uptime.farmacoplants.unilurio.ac.mz`)
+> without the `basic_auth` block — basic auth on `status.*` would block
+> anonymous viewers of the status page too.
 
 ### First-run setup
 
