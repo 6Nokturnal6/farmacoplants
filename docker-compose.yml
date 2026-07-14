@@ -21,3 +21,17 @@ services:
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_PUBLISHABLE_KEY: ${SUPABASE_PUBLISHABLE_KEY}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: farmacoplants-uptime-kuma
+    restart: unless-stopped
+    volumes:
+      - uptime-kuma-data:/app/data
+    ports:
+      # Bind to localhost only — expose via reverse proxy at
+      # status.farmacoplants.unilurio.ac.mz (see DEPLOY.md).
+      - "127.0.0.1:3001:3001"
+
+volumes:
+  uptime-kuma-data:

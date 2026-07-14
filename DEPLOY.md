@@ -87,6 +87,67 @@ git pull
 docker compose up -d --build
 ```
 
+## 7. Uptime monitoring (Uptime Kuma)
+
+The compose file ships an **Uptime Kuma** container bound to
+`127.0.0.1:3001`. Expose it on a subdomain via your reverse proxy, then
+configure a monitor pointing at the app's `/api/public/health` endpoint.
+
+### Reverse proxy
+
+**Caddy:**
+
+```
+status.farmacoplants.unilurio.ac.mz {
+    reverse_proxy 127.0.0.1:3001
+}
+```
+
+**Nginx** (add a second server block, then run certbot for the subdomain):
+
+```nginx
+server {
+    listen 80;
+    server_name status.farmacoplants.unilurio.ac.mz;
+
+    location / {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+```
+
+Point a DNS `A` record for `status.farmacoplants.unilurio.ac.mz` at the
+server before reloading the proxy so TLS issuance succeeds.
+
+### First-run setup
+
+1. Open `https://status.farmacoplants.unilurio.ac.mz` and create the admin
+   account (first visitor becomes admin — do this immediately after DNS +
+   TLS are live).
+2. Add a new monitor:
+   - **Monitor Type:** `HTTP(s) - Keyword`
+   - **Friendly Name:** `farmacoPlants API health`
+   - **URL:** `https://farmacoplants.unilurio.ac.mz/api/public/health`
+   - **Heartbeat Interval:** `60` seconds
+   - **Retries:** `2` (avoid alerting on a single blip)
+   - **Keyword:** `"status":"ok"` (fails when the health route reports
+     `degraded`, even if it still returns 200 through a cache)
+   - **Accepted Status Codes:** `200-299`
+3. Under **Notifications**, wire up at least one channel (email / Slack /
+   Telegram / Discord) so outages actually reach a human.
+4. Optional: create a public **Status Page** exposing this monitor so team
+   members can check availability without logging in.
+
+Data is persisted in the `uptime-kuma-data` named volume — back it up
+alongside the rest of your Docker volumes.
+
 ## Troubleshooting
 
 - **`Missing Supabase environment variable(s)`** — `.env` not loaded or a
