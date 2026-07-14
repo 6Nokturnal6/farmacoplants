@@ -155,8 +155,8 @@ function AuditPage() {
                 <tr><td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">No entries match these filters.</td></tr>
               )}
               {data?.rows.map((r) => (
-                <>
-                  <tr key={r.id} className="border-t">
+                <Fragment key={r.id}>
+                  <tr className="border-t">
                     <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">
                       {new Date(r.created_at).toLocaleString()}
                     </td>
@@ -180,7 +180,7 @@ function AuditPage() {
                     </td>
                   </tr>
                   {expanded === r.id && (
-                    <tr key={`${r.id}-diff`} className="border-t bg-muted/30">
+                    <tr className="border-t bg-muted/30">
                       <td colSpan={6} className="px-3 py-3">
                         <div className="grid gap-3 md:grid-cols-2">
                           <div>
@@ -195,7 +195,7 @@ function AuditPage() {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>
