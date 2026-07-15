@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import unilurioLogo from "@/assets/unilurio-logo.jpg.asset.json";
+import unilurioLogo from "@/assets/unilurio-logo.jpg";
 
 export function Header() {
   const [userId, setUserId] = useState<string | null>(null);
