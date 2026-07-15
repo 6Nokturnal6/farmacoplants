@@ -162,12 +162,21 @@ function AuditPage() {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
           <h1 className="font-display text-3xl font-semibold">Audit log</h1>
-          <Link to="/admin" className="text-sm underline text-muted-foreground hover:text-foreground">← Back to admin</Link>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={exportCsv}
+              disabled={exporting || !data?.count}
+              className="text-sm px-3 py-1.5 border rounded bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40"
+            >
+              {exporting ? "Exporting…" : "Export CSV"}
+            </button>
+            <Link to="/admin" className="text-sm underline text-muted-foreground hover:text-foreground">← Back to admin</Link>
+          </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-4 mb-4">
+        <div className="grid gap-3 sm:grid-cols-3 mb-4">
           <select
             value={tableFilter}
             onChange={(e) => { setTableFilter(e.target.value); setPage(0); }}
@@ -189,9 +198,34 @@ function AuditPage() {
             placeholder="Filter by actor email…"
             value={actorFilter}
             onChange={(e) => { setActorFilter(e.target.value); setPage(0); }}
-            className="border rounded px-3 py-2 bg-background text-sm sm:col-span-2"
+            className="border rounded px-3 py-2 bg-background text-sm"
           />
+          <label className="text-sm flex items-center gap-2">
+            <span className="text-muted-foreground w-10">From</span>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => { setFromDate(e.target.value); setPage(0); }}
+              className="border rounded px-3 py-2 bg-background text-sm flex-1"
+            />
+          </label>
+          <label className="text-sm flex items-center gap-2">
+            <span className="text-muted-foreground w-10">To</span>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => { setToDate(e.target.value); setPage(0); }}
+              className="border rounded px-3 py-2 bg-background text-sm flex-1"
+            />
+          </label>
+          {(fromDate || toDate || tableFilter || actionFilter || actorFilter) && (
+            <button
+              onClick={() => { setFromDate(""); setToDate(""); setTableFilter(""); setActionFilter(""); setActorFilter(""); setPage(0); }}
+              className="text-sm text-muted-foreground hover:text-foreground underline text-left"
+            >Clear filters</button>
+          )}
         </div>
+
 
         {error && (
           <div className="rounded border border-destructive/40 bg-destructive/5 text-destructive px-3 py-2 text-sm mb-4">
