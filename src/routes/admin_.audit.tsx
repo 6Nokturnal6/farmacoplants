@@ -54,27 +54,87 @@ function AuditPage() {
   }, [userId]);
 
   const filterKey = useMemo(
-    () => JSON.stringify({ tableFilter, actionFilter, actorFilter, page }),
-    [tableFilter, actionFilter, actorFilter, page],
+    () => JSON.stringify({ tableFilter, actionFilter, actorFilter, fromDate, toDate, page }),
+    [tableFilter, actionFilter, actorFilter, fromDate, toDate, page],
   );
+
+  const applyFilters = <T extends { eq: any; ilike: any; gte: any; lte: any }>(q: T): T => {
+    let r: any = q;
+    if (tableFilter) r = r.eq("table_name", tableFilter);
+    if (actionFilter) r = r.eq("action", actionFilter);
+    if (actorFilter.trim()) r = r.ilike("actor_email", `%${actorFilter.trim()}%`);
+    if (fromDate) r = r.gte("created_at", new Date(fromDate).toISOString());
+    if (toDate) {
+      const end = new Date(toDate);
+      end.setHours(23, 59, 59, 999);
+      r = r.lte("created_at", end.toISOString());
+    }
+    return r;
+  };
 
   const { data, isLoading, error } = useQuery({
     enabled: !!isAdmin,
     queryKey: ["audit-log", filterKey],
     queryFn: async () => {
-      let q = supabase
+      const base = supabase
         .from("admin_audit_log")
         .select("id, actor_id, actor_email, action, table_name, row_id, old_data, new_data, created_at", { count: "exact" })
         .order("created_at", { ascending: false })
         .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
-      if (tableFilter) q = q.eq("table_name", tableFilter);
-      if (actionFilter) q = q.eq("action", actionFilter);
-      if (actorFilter.trim()) q = q.ilike("actor_email", `%${actorFilter.trim()}%`);
-      const { data, error, count } = await q;
+      const { data, error, count } = await applyFilters(base as any);
       if (error) throw error;
       return { rows: data ?? [], count: count ?? 0 };
     },
   });
+
+  const csvEscape = (v: unknown): string => {
+    if (v === null || v === undefined) return "";
+    const s = typeof v === "string" ? v : JSON.stringify(v);
+    return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const CHUNK = 1000;
+      let offset = 0;
+      const all: any[] = [];
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const base = supabase
+          .from("admin_audit_log")
+          .select("id, actor_id, actor_email, action, table_name, row_id, old_data, new_data, created_at")
+          .order("created_at", { ascending: false })
+          .range(offset, offset + CHUNK - 1);
+        const { data, error } = await applyFilters(base as any);
+        if (error) throw error;
+        const rows = data ?? [];
+        all.push(...rows);
+        if (rows.length < CHUNK) break;
+        offset += CHUNK;
+      }
+      const headers = ["created_at", "actor_email", "actor_id", "action", "table_name", "row_id", "old_data", "new_data"];
+      const csv = [
+        headers.join(","),
+        ...all.map((r) => headers.map((h) => csvEscape((r as any)[h])).join(",")),
+      ].join("\n");
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+      a.download = `audit-log-${stamp}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert("Export failed: " + (e as Error).message);
+    } finally {
+      setExporting(false);
+    }
+  };
+
 
   if (!userId) return null;
   if (isAdmin === null) {
