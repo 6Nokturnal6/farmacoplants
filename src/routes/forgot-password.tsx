@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { friendlyAuthError } from "@/lib/auth-errors";
-import unilurioLogo from "@/assets/unilurio-logo.jpg.asset.json";
+import unilurioLogo from "@/assets/unilurio-logo.jpg";
 
 export const Route = createFileRoute("/forgot-password")({
   head: () => ({ meta: [{ title: "Reset password — FarmacoPlants" }] }),
@@ -59,7 +59,7 @@ function ForgotPassword() {
       <main className="flex-1 grid place-items-center px-4 py-12">
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">
-            <img src={unilurioLogo.url} alt="Universidade Lúrio" className="h-16 w-16 mx-auto object-contain" />
+            <img src={unilurioLogo} alt="Universidade Lúrio" className="h-16 w-16 mx-auto object-contain" />
             <h1 className="font-display text-3xl font-semibold mt-4">Reset password</h1>
             <p className="text-sm text-muted-foreground mt-1">We'll email you a reset link</p>
           </div>

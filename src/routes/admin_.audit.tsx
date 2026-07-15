@@ -32,8 +32,12 @@ function AuditPage() {
   const [tableFilter, setTableFilter] = useState<string>("");
   const [actionFilter, setActionFilter] = useState<string>("");
   const [actorFilter, setActorFilter] = useState<string>("");
+  const [fromDate, setFromDate] = useState<string>("");
+  const [toDate, setToDate] = useState<string>("");
   const [page, setPage] = useState(0);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -50,27 +54,87 @@ function AuditPage() {
   }, [userId]);
 
   const filterKey = useMemo(
-    () => JSON.stringify({ tableFilter, actionFilter, actorFilter, page }),
-    [tableFilter, actionFilter, actorFilter, page],
+    () => JSON.stringify({ tableFilter, actionFilter, actorFilter, fromDate, toDate, page }),
+    [tableFilter, actionFilter, actorFilter, fromDate, toDate, page],
   );
+
+  const applyFilters = <T extends { eq: any; ilike: any; gte: any; lte: any }>(q: T): T => {
+    let r: any = q;
+    if (tableFilter) r = r.eq("table_name", tableFilter);
+    if (actionFilter) r = r.eq("action", actionFilter);
+    if (actorFilter.trim()) r = r.ilike("actor_email", `%${actorFilter.trim()}%`);
+    if (fromDate) r = r.gte("created_at", new Date(fromDate).toISOString());
+    if (toDate) {
+      const end = new Date(toDate);
+      end.setHours(23, 59, 59, 999);
+      r = r.lte("created_at", end.toISOString());
+    }
+    return r;
+  };
 
   const { data, isLoading, error } = useQuery({
     enabled: !!isAdmin,
     queryKey: ["audit-log", filterKey],
     queryFn: async () => {
-      let q = supabase
+      const base = supabase
         .from("admin_audit_log")
         .select("id, actor_id, actor_email, action, table_name, row_id, old_data, new_data, created_at", { count: "exact" })
         .order("created_at", { ascending: false })
         .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
-      if (tableFilter) q = q.eq("table_name", tableFilter);
-      if (actionFilter) q = q.eq("action", actionFilter);
-      if (actorFilter.trim()) q = q.ilike("actor_email", `%${actorFilter.trim()}%`);
-      const { data, error, count } = await q;
+      const { data, error, count } = await applyFilters(base as any);
       if (error) throw error;
       return { rows: data ?? [], count: count ?? 0 };
     },
   });
+
+  const csvEscape = (v: unknown): string => {
+    if (v === null || v === undefined) return "";
+    const s = typeof v === "string" ? v : JSON.stringify(v);
+    return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const CHUNK = 1000;
+      let offset = 0;
+      const all: any[] = [];
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const base = supabase
+          .from("admin_audit_log")
+          .select("id, actor_id, actor_email, action, table_name, row_id, old_data, new_data, created_at")
+          .order("created_at", { ascending: false })
+          .range(offset, offset + CHUNK - 1);
+        const { data, error } = await applyFilters(base as any);
+        if (error) throw error;
+        const rows = data ?? [];
+        all.push(...rows);
+        if (rows.length < CHUNK) break;
+        offset += CHUNK;
+      }
+      const headers = ["created_at", "actor_email", "actor_id", "action", "table_name", "row_id", "old_data", "new_data"];
+      const csv = [
+        headers.join(","),
+        ...all.map((r) => headers.map((h) => csvEscape((r as any)[h])).join(",")),
+      ].join("\n");
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+      a.download = `audit-log-${stamp}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert("Export failed: " + (e as Error).message);
+    } finally {
+      setExporting(false);
+    }
+  };
+
 
   if (!userId) return null;
   if (isAdmin === null) {
@@ -98,12 +162,21 @@ function AuditPage() {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
           <h1 className="font-display text-3xl font-semibold">Audit log</h1>
-          <Link to="/admin" className="text-sm underline text-muted-foreground hover:text-foreground">← Back to admin</Link>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={exportCsv}
+              disabled={exporting || !data?.count}
+              className="text-sm px-3 py-1.5 border rounded bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40"
+            >
+              {exporting ? "Exporting…" : "Export CSV"}
+            </button>
+            <Link to="/admin" className="text-sm underline text-muted-foreground hover:text-foreground">← Back to admin</Link>
+          </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-4 mb-4">
+        <div className="grid gap-3 sm:grid-cols-3 mb-4">
           <select
             value={tableFilter}
             onChange={(e) => { setTableFilter(e.target.value); setPage(0); }}
@@ -125,9 +198,34 @@ function AuditPage() {
             placeholder="Filter by actor email…"
             value={actorFilter}
             onChange={(e) => { setActorFilter(e.target.value); setPage(0); }}
-            className="border rounded px-3 py-2 bg-background text-sm sm:col-span-2"
+            className="border rounded px-3 py-2 bg-background text-sm"
           />
+          <label className="text-sm flex items-center gap-2">
+            <span className="text-muted-foreground w-10">From</span>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => { setFromDate(e.target.value); setPage(0); }}
+              className="border rounded px-3 py-2 bg-background text-sm flex-1"
+            />
+          </label>
+          <label className="text-sm flex items-center gap-2">
+            <span className="text-muted-foreground w-10">To</span>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => { setToDate(e.target.value); setPage(0); }}
+              className="border rounded px-3 py-2 bg-background text-sm flex-1"
+            />
+          </label>
+          {(fromDate || toDate || tableFilter || actionFilter || actorFilter) && (
+            <button
+              onClick={() => { setFromDate(""); setToDate(""); setTableFilter(""); setActionFilter(""); setActorFilter(""); setPage(0); }}
+              className="text-sm text-muted-foreground hover:text-foreground underline text-left"
+            >Clear filters</button>
+          )}
         </div>
+
 
         {error && (
           <div className="rounded border border-destructive/40 bg-destructive/5 text-destructive px-3 py-2 text-sm mb-4">
@@ -154,7 +252,7 @@ function AuditPage() {
               {!isLoading && data?.rows.length === 0 && (
                 <tr><td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">No entries match these filters.</td></tr>
               )}
-              {data?.rows.map((r) => (
+              {data?.rows.map((r: any) => (
                 <Fragment key={r.id}>
                   <tr className="border-t">
                     <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">

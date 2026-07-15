@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import unilurioLogo from "@/assets/unilurio-logo.jpg.asset.json";
+import unilurioLogo from "@/assets/unilurio-logo.jpg";
 
 export function Header() {
   const [userId, setUserId] = useState<string | null>(null);
@@ -27,7 +27,7 @@ export function Header() {
     <header className="border-b border-border bg-card/60 backdrop-blur sticky top-0 z-40">
       <div className="mx-auto max-w-7xl px-6 h-16 flex items-center justify-between gap-6">
         <Link to="/" className="flex items-center gap-2.5 group">
-          <img src={unilurioLogo.url} alt="Universidade Lúrio" className="h-9 w-9 object-contain" />
+          <img src={unilurioLogo} alt="Universidade Lúrio" className="h-9 w-9 object-contain" />
           <div className="leading-tight">
             <div className="font-display text-lg font-semibold text-foreground">FarmacoPlants</div>
             <div className="text-[10px] uppercase tracking-widest text-muted-foreground">UniLúrio · Mozambique</div>
