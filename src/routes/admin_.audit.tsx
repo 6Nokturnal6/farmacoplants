@@ -218,7 +218,7 @@ function AuditPage() {
               {!isLoading && data?.rows.length === 0 && (
                 <tr><td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">No entries match these filters.</td></tr>
               )}
-              {data?.rows.map((r) => (
+              {data?.rows.map((r: any) => (
                 <Fragment key={r.id}>
                   <tr className="border-t">
                     <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">
