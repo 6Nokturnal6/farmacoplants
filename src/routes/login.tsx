@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { friendlyAuthError } from "@/lib/auth-errors";
+import { getPublicSiteUrl } from "@/lib/public-site-url";
 import unilurioLogo from "@/assets/unilurio-logo.jpg";
 
 export const Route = createFileRoute("/login")({
@@ -30,7 +31,7 @@ function Login() {
         const { error } = await supabase.auth.signUp({
           email, password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: getPublicSiteUrl(),
             data: { display_name: name },
           },
         });

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import unilurioLogo from "@/assets/unilurio-logo.jpg";
+import { friendlyAuthError } from "@/lib/auth-errors";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({ meta: [{ title: "Set new password — FarmacoPlants" }] }),
@@ -18,9 +19,13 @@ function ResetPassword() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   // Supabase parses the recovery tokens in the URL hash and fires PASSWORD_RECOVERY.
   useEffect(() => {
+    const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const callbackError = params.get("error_description");
+    if (callbackError) setLinkError(callbackError.replace(/\+/g, " "));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") setReady(true);
     });
@@ -42,8 +47,8 @@ function ResetPassword() {
       setDone(true);
       await supabase.auth.signOut();
       setTimeout(() => navigate({ to: "/login" }), 1500);
-    } catch (err: any) {
-      setError(err.message ?? "Could not update password");
+    } catch (err) {
+      setError(friendlyAuthError(err));
     } finally {
       setLoading(false);
     }
@@ -59,7 +64,13 @@ function ResetPassword() {
             <h1 className="font-display text-3xl font-semibold mt-4">Set new password</h1>
             <p className="text-sm text-muted-foreground mt-1">Choose a new password for your account</p>
           </div>
-          {done ? (
+          {linkError ? (
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm">
+              <p className="font-medium text-destructive">This reset link is invalid or has expired.</p>
+              <p className="mt-1 text-muted-foreground">Request a new link and open only the latest email.</p>
+              <Link to="/forgot-password" className="mt-3 inline-block font-medium text-primary hover:underline">Request another link</Link>
+            </div>
+          ) : done ? (
             <div className="rounded-md border border-border bg-card p-4 text-sm">
               Password updated. Redirecting to sign in…
             </div>

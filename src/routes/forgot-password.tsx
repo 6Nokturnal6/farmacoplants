@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { friendlyAuthError } from "@/lib/auth-errors";
+import { getPublicSiteUrl } from "@/lib/public-site-url";
 import unilurioLogo from "@/assets/unilurio-logo.jpg";
 
 export const Route = createFileRoute("/forgot-password")({
@@ -41,7 +42,7 @@ function ForgotPassword() {
     setLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${getPublicSiteUrl()}/reset-password`,
       });
       if (error) throw error;
       localStorage.setItem(COOLDOWN_KEY, String(Date.now() + COOLDOWN_SECONDS * 1000));
