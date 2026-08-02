@@ -1,8 +1,8 @@
 FROM node:22 AS builder
 WORKDIR /app
 
-COPY package.json bun.lock ./
-RUN corepack enable && corepack prepare bun@1.2.22 --activate && bun install --frozen-lockfile
+COPY package.json ./
+RUN npm install
 
 COPY . .
 
@@ -16,7 +16,7 @@ ENV VITE_SUPABASE_PROJECT_ID=${VITE_SUPABASE_PROJECT_ID}
 ENV VITE_PUBLIC_SITE_URL=${VITE_PUBLIC_SITE_URL}
 
 ENV BUILD_PRESET=node-server
-RUN bun run build
+RUN npm run build
 
 FROM node:22-alpine AS runner
 WORKDIR /app
