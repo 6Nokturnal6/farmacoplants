@@ -74,11 +74,25 @@ sudo nginx -t && sudo systemctl reload nginx
 sudo certbot --nginx -d farmacoplants.unilurio.ac.mz
 ```
 
-## 5. Update Supabase auth URLs
+## 5. Configure production auth URLs
 
-In the Supabase dashboard → Authentication → URL Configuration, add
-`https://farmacoplants.unilurio.ac.mz` to **Site URL** and **Redirect URLs**.
-Otherwise Google / email-confirmation links will fail.
+In the backend auth settings, set the **Site URL** to:
+
+`https://farmacoplants.unilurio.ac.mz`
+
+Allow these exact redirect URLs:
+
+- `https://farmacoplants.unilurio.ac.mz`
+- `https://farmacoplants.unilurio.ac.mz/reset-password`
+
+The app also sets `VITE_PUBLIC_SITE_URL` at build time. Both settings are
+required: if the redirect is not allow-listed, the auth service falls back to
+its Site URL (an old `http://localhost:3000` value causes recovery links to
+return to localhost).
+
+After changing `.env` or auth URL settings, rebuild the image and request a
+fresh recovery email. Previously issued one-time links may already be expired
+or consumed.
 
 ## 6. Updating after a code change
 

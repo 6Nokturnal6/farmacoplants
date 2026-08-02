@@ -4,10 +4,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { friendlyAuthError } from "@/lib/auth-errors";
+import { getPublicSiteUrl } from "@/lib/public-site-url";
 import unilurioLogo from "@/assets/unilurio-logo.jpg";
 
 export const Route = createFileRoute("/forgot-password")({
-  head: () => ({ meta: [{ title: "Reset password — FarmacoPlants" }] }),
+  head: () => ({ meta: [
+    { title: "Reset password — FarmacoPlants" },
+    { name: "description", content: "Request a secure FarmacoPlants password reset link." },
+    { property: "og:title", content: "Reset password — FarmacoPlants" },
+    { property: "og:description", content: "Request a secure FarmacoPlants password reset link." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: ForgotPassword,
 });
 
@@ -41,7 +49,7 @@ function ForgotPassword() {
     setLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${getPublicSiteUrl()}/reset-password`,
       });
       if (error) throw error;
       localStorage.setItem(COOLDOWN_KEY, String(Date.now() + COOLDOWN_SECONDS * 1000));

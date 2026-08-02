@@ -5,10 +5,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { friendlyAuthError } from "@/lib/auth-errors";
+import { getPublicSiteUrl } from "@/lib/public-site-url";
 import unilurioLogo from "@/assets/unilurio-logo.jpg";
 
 export const Route = createFileRoute("/login")({
-  head: () => ({ meta: [{ title: "Sign in — FarmacoPlants" }] }),
+  head: () => ({ meta: [
+    { title: "Sign in — FarmacoPlants" },
+    { name: "description", content: "Sign in to curate the FarmacoPlants natural products database." },
+    { property: "og:title", content: "Sign in — FarmacoPlants" },
+    { property: "og:description", content: "Sign in to curate the FarmacoPlants natural products database." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: Login,
 });
 
@@ -30,7 +38,7 @@ function Login() {
         const { error } = await supabase.auth.signUp({
           email, password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: getPublicSiteUrl(),
             data: { display_name: name },
           },
         });

@@ -21,6 +21,7 @@ import { Route as CitationsIndexRouteImport } from './routes/citations.index'
 import { Route as ActivitiesIndexRouteImport } from './routes/activities.index'
 import { Route as PlantsIdRouteImport } from './routes/plants.$id'
 import { Route as CompoundsIdRouteImport } from './routes/compounds.$id'
+import { Route as AdminUsersRouteImport } from './routes/admin_.users'
 import { Route as AdminAuditRouteImport } from './routes/admin_.audit'
 import { Route as ActivitiesIdRouteImport } from './routes/activities.$id'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
@@ -85,6 +86,11 @@ const CompoundsIdRoute = CompoundsIdRouteImport.update({
   path: '/compounds/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/admin_/users',
+  path: '/admin/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminAuditRoute = AdminAuditRouteImport.update({
   id: '/admin_/audit',
   path: '/admin/audit',
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/activities/$id': typeof ActivitiesIdRoute
   '/admin/audit': typeof AdminAuditRoute
+  '/admin/users': typeof AdminUsersRoute
   '/compounds/$id': typeof CompoundsIdRoute
   '/plants/$id': typeof PlantsIdRoute
   '/activities/': typeof ActivitiesIndexRoute
@@ -127,6 +134,7 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/activities/$id': typeof ActivitiesIdRoute
   '/admin/audit': typeof AdminAuditRoute
+  '/admin/users': typeof AdminUsersRoute
   '/compounds/$id': typeof CompoundsIdRoute
   '/plants/$id': typeof PlantsIdRoute
   '/activities': typeof ActivitiesIndexRoute
@@ -145,6 +153,7 @@ export interface FileRoutesById {
   '/search': typeof SearchRoute
   '/activities/$id': typeof ActivitiesIdRoute
   '/admin_/audit': typeof AdminAuditRoute
+  '/admin_/users': typeof AdminUsersRoute
   '/compounds/$id': typeof CompoundsIdRoute
   '/plants/$id': typeof PlantsIdRoute
   '/activities/': typeof ActivitiesIndexRoute
@@ -164,6 +173,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/activities/$id'
     | '/admin/audit'
+    | '/admin/users'
     | '/compounds/$id'
     | '/plants/$id'
     | '/activities/'
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/activities/$id'
     | '/admin/audit'
+    | '/admin/users'
     | '/compounds/$id'
     | '/plants/$id'
     | '/activities'
@@ -198,6 +209,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/activities/$id'
     | '/admin_/audit'
+    | '/admin_/users'
     | '/compounds/$id'
     | '/plants/$id'
     | '/activities/'
@@ -216,6 +228,7 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   ActivitiesIdRoute: typeof ActivitiesIdRoute
   AdminAuditRoute: typeof AdminAuditRoute
+  AdminUsersRoute: typeof AdminUsersRoute
   CompoundsIdRoute: typeof CompoundsIdRoute
   PlantsIdRoute: typeof PlantsIdRoute
   ActivitiesIndexRoute: typeof ActivitiesIndexRoute
@@ -311,6 +324,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CompoundsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin_/users': {
+      id: '/admin_/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin_/audit': {
       id: '/admin_/audit'
       path: '/admin/audit'
@@ -344,6 +364,7 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   ActivitiesIdRoute: ActivitiesIdRoute,
   AdminAuditRoute: AdminAuditRoute,
+  AdminUsersRoute: AdminUsersRoute,
   CompoundsIdRoute: CompoundsIdRoute,
   PlantsIdRoute: PlantsIdRoute,
   ActivitiesIndexRoute: ActivitiesIndexRoute,
