@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
-import { Pencil, Trash2, X } from "lucide-react";
+import { Pencil, Trash2, Users, X } from "lucide-react";
 import { PlantImage, uploadPlantImage } from "@/lib/plant-image";
 
 export const Route = createFileRoute("/admin")({
@@ -68,7 +68,10 @@ function Admin() {
             <h1 className="font-display text-4xl font-semibold">Curation</h1>
             <p className="text-muted-foreground mt-2">Create, edit and delete records.</p>
           </div>
-          <Link to="/admin/audit" className="text-sm underline text-muted-foreground hover:text-foreground shrink-0 mt-2">Audit log →</Link>
+          <div className="flex items-center gap-3 shrink-0 mt-2">
+            <Link to="/admin/users" className="inline-flex items-center gap-1.5 text-sm underline text-muted-foreground hover:text-foreground"><Users className="h-4 w-4" /> Users</Link>
+            <Link to="/admin/audit" className="text-sm underline text-muted-foreground hover:text-foreground">Audit log →</Link>
+          </div>
         </div>
 
         <div className="mt-6 flex gap-1 border-b border-border">

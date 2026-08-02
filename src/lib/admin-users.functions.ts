@@ -2,8 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const roleSchema = z.enum(["admin", "curator", "user"]);
-
 export const listAdminUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -42,7 +40,7 @@ export const createAdminUser = createServerFn({ method: "POST" })
     email: z.string().email().max(254),
     displayName: z.string().trim().min(1).max(100),
     password: z.string().min(8).max(128),
-    role: roleSchema,
+    role: z.enum(["admin", "curator", "user"]),
   }))
   .handler(async ({ data, context }) => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
@@ -77,7 +75,7 @@ export const updateAdminUser = createServerFn({ method: "POST" })
   .inputValidator(z.object({
     id: z.string().uuid(),
     displayName: z.string().trim().min(1).max(100),
-    role: roleSchema,
+    role: z.enum(["admin", "curator", "user"]),
     active: z.boolean(),
   }))
   .handler(async ({ data, context }) => {

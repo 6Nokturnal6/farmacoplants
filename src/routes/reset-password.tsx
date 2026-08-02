@@ -7,7 +7,14 @@ import unilurioLogo from "@/assets/unilurio-logo.jpg";
 import { friendlyAuthError } from "@/lib/auth-errors";
 
 export const Route = createFileRoute("/reset-password")({
-  head: () => ({ meta: [{ title: "Set new password — FarmacoPlants" }] }),
+  head: () => ({ meta: [
+    { title: "Set new password — FarmacoPlants" },
+    { name: "description", content: "Set a new password for your FarmacoPlants account." },
+    { property: "og:title", content: "Set new password — FarmacoPlants" },
+    { property: "og:description", content: "Set a new password for your FarmacoPlants account." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+  ] }),
   component: ResetPassword,
 });
 
