@@ -7,7 +7,8 @@ import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { createAdminUser, listAdminUsers, updateAdminUser } from "@/lib/admin-users.functions";
+import { getPublicSiteUrl } from "@/lib/public-site-url";
+import { createAdminUser, listAdminUsers, sendAdminPasswordReset, updateAdminUser } from "@/lib/admin-users.functions";
 
 export const Route = createFileRoute("/admin_/users")({
   head: () => ({
