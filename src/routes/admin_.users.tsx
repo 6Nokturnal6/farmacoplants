@@ -7,7 +7,8 @@ import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { createAdminUser, listAdminUsers, updateAdminUser } from "@/lib/admin-users.functions";
+import { getPublicSiteUrl } from "@/lib/public-site-url";
+import { createAdminUser, listAdminUsers, sendAdminPasswordReset, updateAdminUser } from "@/lib/admin-users.functions";
 
 export const Route = createFileRoute("/admin_/users")({
   head: () => ({
@@ -42,6 +43,7 @@ function UserManagement() {
   const listUsers = useServerFn(listAdminUsers);
   const createUser = useServerFn(createAdminUser);
   const updateUser = useServerFn(updateAdminUser);
+  const sendReset = useServerFn(sendAdminPasswordReset);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
@@ -86,6 +88,12 @@ function UserManagement() {
       setMessage("User and profile updated.");
       await queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
+    onError: (error) => setMessage(error.message),
+  });
+
+  const resetMutation = useMutation({
+    mutationFn: (user: EditableUser) => sendReset({ data: { id: user.id, redirectTo: `${getPublicSiteUrl()}/reset-password` } }),
+    onSuccess: (result) => setMessage(`Password reset email sent to ${result.email}.`),
     onError: (error) => setMessage(error.message),
   });
 
@@ -159,6 +167,15 @@ function UserManagement() {
                           onClick={() => toggleActive(user as EditableUser)}
                         >
                           {user.active ? "Deactivate" : "Activate"}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={resetMutation.isPending}
+                          onClick={() => { setMessage(null); resetMutation.mutate(user as EditableUser); }}
+                        >
+                          {resetMutation.isPending && resetMutation.variables?.id === user.id ? "Sending…" : "Send reset"}
                         </Button>
                         <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(user as EditableUser)}>Edit</Button>
                       </div>
