@@ -168,6 +168,15 @@ function UserManagement() {
                         >
                           {user.active ? "Deactivate" : "Activate"}
                         </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={resetMutation.isPending}
+                          onClick={() => { setMessage(null); resetMutation.mutate(user as EditableUser); }}
+                        >
+                          {resetMutation.isPending && resetMutation.variables?.id === user.id ? "Sending…" : "Send reset"}
+                        </Button>
                         <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(user as EditableUser)}>Edit</Button>
                       </div>
                     </td>
