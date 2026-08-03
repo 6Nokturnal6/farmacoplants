@@ -43,6 +43,7 @@ function UserManagement() {
   const listUsers = useServerFn(listAdminUsers);
   const createUser = useServerFn(createAdminUser);
   const updateUser = useServerFn(updateAdminUser);
+  const sendReset = useServerFn(sendAdminPasswordReset);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
