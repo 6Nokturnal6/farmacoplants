@@ -9,41 +9,26 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SearchRouteImport } from './routes/search'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as PlantsIndexRouteImport } from './routes/plants.index'
-import { Route as CompoundsIndexRouteImport } from './routes/compounds.index'
-import { Route as CitationsIndexRouteImport } from './routes/citations.index'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as SearchRouteImport } from './routes/search'
 import { Route as ActivitiesIndexRouteImport } from './routes/activities.index'
-import { Route as PlantsIdRouteImport } from './routes/plants.$id'
-import { Route as CompoundsIdRouteImport } from './routes/compounds.$id'
-import { Route as AdminUsersRouteImport } from './routes/admin_.users'
-import { Route as AdminAuditRouteImport } from './routes/admin_.audit'
 import { Route as ActivitiesIdRouteImport } from './routes/activities.$id'
+import { Route as AdminAuditRouteImport } from './routes/admin_.audit'
+import { Route as AdminUsersRouteImport } from './routes/admin_.users'
+import { Route as CitationsIndexRouteImport } from './routes/citations.index'
+import { Route as CompoundsIndexRouteImport } from './routes/compounds.index'
+import { Route as CompoundsIdRouteImport } from './routes/compounds.$id'
+import { Route as PlantsIndexRouteImport } from './routes/plants.index'
+import { Route as PlantsIdRouteImport } from './routes/plants.$id'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 
-const SearchRoute = SearchRouteImport.update({
-  id: '/search',
-  path: '/search',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
-  id: '/forgot-password',
-  path: '/forgot-password',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -51,24 +36,24 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PlantsIndexRoute = PlantsIndexRouteImport.update({
-  id: '/plants/',
-  path: '/plants/',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CompoundsIndexRoute = CompoundsIndexRouteImport.update({
-  id: '/compounds/',
-  path: '/compounds/',
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CitationsIndexRoute = CitationsIndexRouteImport.update({
-  id: '/citations/',
-  path: '/citations/',
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ActivitiesIndexRoute = ActivitiesIndexRouteImport.update({
@@ -76,19 +61,9 @@ const ActivitiesIndexRoute = ActivitiesIndexRouteImport.update({
   path: '/activities/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PlantsIdRoute = PlantsIdRouteImport.update({
-  id: '/plants/$id',
-  path: '/plants/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CompoundsIdRoute = CompoundsIdRouteImport.update({
-  id: '/compounds/$id',
-  path: '/compounds/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminUsersRoute = AdminUsersRouteImport.update({
-  id: '/admin_/users',
-  path: '/admin/users',
+const ActivitiesIdRoute = ActivitiesIdRouteImport.update({
+  id: '/activities/$id',
+  path: '/activities/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminAuditRoute = AdminAuditRouteImport.update({
@@ -96,9 +71,34 @@ const AdminAuditRoute = AdminAuditRouteImport.update({
   path: '/admin/audit',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ActivitiesIdRoute = ActivitiesIdRouteImport.update({
-  id: '/activities/$id',
-  path: '/activities/$id',
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/admin_/users',
+  path: '/admin/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CitationsIndexRoute = CitationsIndexRouteImport.update({
+  id: '/citations/',
+  path: '/citations/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompoundsIndexRoute = CompoundsIndexRouteImport.update({
+  id: '/compounds/',
+  path: '/compounds/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompoundsIdRoute = CompoundsIdRouteImport.update({
+  id: '/compounds/$id',
+  path: '/compounds/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlantsIndexRoute = PlantsIndexRouteImport.update({
+  id: '/plants/',
+  path: '/plants/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlantsIdRoute = PlantsIdRouteImport.update({
+  id: '/plants/$id',
+  path: '/plants/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
@@ -240,32 +240,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/search': {
-      id: '/search'
-      path: '/search'
-      fullPath: '/search'
-      preLoaderRoute: typeof SearchRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/forgot-password': {
-      id: '/forgot-password'
-      path: '/forgot-password'
-      fullPath: '/forgot-password'
-      preLoaderRoute: typeof ForgotPasswordRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -275,32 +254,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/plants/': {
-      id: '/plants/'
-      path: '/plants'
-      fullPath: '/plants/'
-      preLoaderRoute: typeof PlantsIndexRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/compounds/': {
-      id: '/compounds/'
-      path: '/compounds'
-      fullPath: '/compounds/'
-      preLoaderRoute: typeof CompoundsIndexRouteImport
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/citations/': {
-      id: '/citations/'
-      path: '/citations'
-      fullPath: '/citations/'
-      preLoaderRoute: typeof CitationsIndexRouteImport
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/activities/': {
@@ -310,25 +289,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ActivitiesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/plants/$id': {
-      id: '/plants/$id'
-      path: '/plants/$id'
-      fullPath: '/plants/$id'
-      preLoaderRoute: typeof PlantsIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/compounds/$id': {
-      id: '/compounds/$id'
-      path: '/compounds/$id'
-      fullPath: '/compounds/$id'
-      preLoaderRoute: typeof CompoundsIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin_/users': {
-      id: '/admin_/users'
-      path: '/admin/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersRouteImport
+    '/activities/$id': {
+      id: '/activities/$id'
+      path: '/activities/$id'
+      fullPath: '/activities/$id'
+      preLoaderRoute: typeof ActivitiesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin_/audit': {
@@ -338,11 +303,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAuditRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/activities/$id': {
-      id: '/activities/$id'
-      path: '/activities/$id'
-      fullPath: '/activities/$id'
-      preLoaderRoute: typeof ActivitiesIdRouteImport
+    '/admin_/users': {
+      id: '/admin_/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/citations/': {
+      id: '/citations/'
+      path: '/citations'
+      fullPath: '/citations/'
+      preLoaderRoute: typeof CitationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compounds/': {
+      id: '/compounds/'
+      path: '/compounds'
+      fullPath: '/compounds/'
+      preLoaderRoute: typeof CompoundsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compounds/$id': {
+      id: '/compounds/$id'
+      path: '/compounds/$id'
+      fullPath: '/compounds/$id'
+      preLoaderRoute: typeof CompoundsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/plants/': {
+      id: '/plants/'
+      path: '/plants'
+      fullPath: '/plants/'
+      preLoaderRoute: typeof PlantsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/plants/$id': {
+      id: '/plants/$id'
+      path: '/plants/$id'
+      fullPath: '/plants/$id'
+      preLoaderRoute: typeof PlantsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/health': {
