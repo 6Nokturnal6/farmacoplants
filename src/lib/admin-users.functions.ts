@@ -100,3 +100,31 @@ export const updateAdminUser = createServerFn({ method: "POST" })
     if (roleError) throw roleError;
     return { ok: true };
   });
+
+export const sendAdminPasswordReset = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({
+    id: z.string().uuid(),
+    redirectTo: z.string().url().max(500),
+  }))
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+
+    const redirect = new URL(data.redirectTo);
+    if (redirect.pathname !== "/reset-password") throw new Error("Invalid redirect target");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: target, error: targetError } = await supabaseAdmin.auth.admin.getUserById(data.id);
+    if (targetError) throw targetError;
+    const email = target.user?.email;
+    if (!email) throw new Error("This account has no email address.");
+
+    const { createClient } = await import("@supabase/supabase-js");
+    const publicClient = createClient(process.env["SUPABASE_URL"]!, process.env["SUPABASE_PUBLISHABLE_KEY"]!, {
+      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+    });
+    const { error } = await publicClient.auth.resetPasswordForEmail(email, { redirectTo: redirect.toString() });
+    if (error) throw error;
+    return { email };
+  });
