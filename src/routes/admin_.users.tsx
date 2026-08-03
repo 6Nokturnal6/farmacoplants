@@ -89,11 +89,17 @@ function UserManagement() {
     onError: (error) => setMessage(error.message),
   });
 
+  const toggleActive = (user: EditableUser) => {
+    setMessage(null);
+    updateMutation.mutate({ ...user, active: !user.active });
+  };
+
   const submit = (event: FormEvent) => {
     event.preventDefault();
     setMessage(null);
     createMutation.mutate();
   };
+
 
   return (
     <div className="min-h-screen flex flex-col">
