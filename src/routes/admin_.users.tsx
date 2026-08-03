@@ -91,6 +91,12 @@ function UserManagement() {
     onError: (error) => setMessage(error.message),
   });
 
+  const resetMutation = useMutation({
+    mutationFn: (user: EditableUser) => sendReset({ data: { id: user.id, redirectTo: `${getPublicSiteUrl()}/reset-password` } }),
+    onSuccess: (result) => setMessage(`Password reset email sent to ${result.email}.`),
+    onError: (error) => setMessage(error.message),
+  });
+
   const toggleActive = (user: EditableUser) => {
     setMessage(null);
     updateMutation.mutate({ ...user, active: !user.active });
