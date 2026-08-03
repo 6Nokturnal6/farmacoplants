@@ -89,11 +89,17 @@ function UserManagement() {
     onError: (error) => setMessage(error.message),
   });
 
+  const toggleActive = (user: EditableUser) => {
+    setMessage(null);
+    updateMutation.mutate({ ...user, active: !user.active });
+  };
+
   const submit = (event: FormEvent) => {
     event.preventDefault();
     setMessage(null);
     createMutation.mutate();
   };
+
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -142,8 +148,23 @@ function UserManagement() {
                     <td className="py-3 pr-4 capitalize">{user.role}</td>
                     <td className="py-3 pr-4"><span className={user.active ? "text-primary" : "text-destructive"}>{user.active ? "Active" : "Deactivated"}</span></td>
                     <td className="py-3 pr-4 text-muted-foreground">{user.lastSignInAt ? new Date(user.lastSignInAt).toLocaleDateString() : "Never"}</td>
-                    <td className="py-3 text-right"><Button type="button" size="sm" variant="outline" onClick={() => setEditing(user as EditableUser)}>Edit</Button></td>
+                    <td className="py-3 text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={user.active ? "outline" : "default"}
+                          disabled={user.id === currentUserId || updateMutation.isPending}
+                          title={user.id === currentUserId ? "You cannot deactivate your own account" : undefined}
+                          onClick={() => toggleActive(user as EditableUser)}
+                        >
+                          {user.active ? "Deactivate" : "Activate"}
+                        </Button>
+                        <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(user as EditableUser)}>Edit</Button>
+                      </div>
+                    </td>
                   </tr>
+
                 ))}
               </tbody>
             </table>
