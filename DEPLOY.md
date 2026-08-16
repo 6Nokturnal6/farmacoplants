@@ -208,3 +208,43 @@ alongside the rest of your Docker volumes.
   `docker compose up -d --build` after changing them.
 - **502 from Nginx/Caddy** — the container is not listening. Check
   `docker compose logs app`.
+
+## 8. One-command CLI install (`linux-magic-cli`)
+
+`linux-magic-cli` is a small POSIX shell helper for managing this deployment
+(health checks, env validation, start/stop/update). Install it on any common
+Linux distro (Debian/Ubuntu, Fedora/RHEL, Arch, openSUSE, Alpine):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/6Nokturnal6/farmacoplants/main/scripts/install.sh | sh
+```
+
+From a checkout of this repo you can also run `./scripts/install.sh` directly —
+it installs the local `cli/linux-magic-cli` instead of downloading.
+
+Installer options:
+
+- `--prefix DIR` — install into `DIR/bin` (default `/usr/local`, or `~/.local`
+  when running without root)
+- `--uninstall` — remove the installed copy
+- `--version` — print the installer version
+
+### Usage
+
+```bash
+linux-magic-cli env       # verify required .env variables
+linux-magic-cli up        # docker compose up -d --build
+linux-magic-cli health    # GET /api/public/health and assert "status":"ok"
+linux-magic-cli status    # container status
+linux-magic-cli logs app  # follow logs
+linux-magic-cli update    # git pull, then rebuild and restart
+linux-magic-cli down      # stop the stack
+```
+
+Override defaults with environment variables:
+
+```bash
+FARMACOPLANTS_DIR=/srv/farmacoplants \
+FARMACOPLANTS_URL=https://farmacoplants.unilurio.ac.mz \
+  linux-magic-cli health
+```

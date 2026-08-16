@@ -1,0 +1,105 @@
+#!/bin/sh
+# linux-magic-cli — helper CLI for the farmacoPlants self-hosted deployment.
+# POSIX sh; works on Debian/Ubuntu, Fedora/RHEL, Arch, openSUSE, Alpine.
+
+set -eu
+
+VERSION="1.0.0"
+APP_DIR="${FARMACOPLANTS_DIR:-$(pwd)}"
+BASE_URL="${FARMACOPLANTS_URL:-http://127.0.0.1:3000}"
+
+REQUIRED_ENV="VITE_SUPABASE_URL VITE_SUPABASE_PUBLISHABLE_KEY VITE_SUPABASE_PROJECT_ID SUPABASE_URL SUPABASE_PUBLISHABLE_KEY"
+
+die() { echo "error: $*" >&2; exit 1; }
+info() { echo "==> $*"; }
+
+compose() {
+  if docker compose version >/dev/null 2>&1; then
+    ( cd "$APP_DIR" && docker compose "$@" )
+  elif command -v docker-compose >/dev/null 2>&1; then
+    ( cd "$APP_DIR" && docker-compose "$@" )
+  else
+    die "Docker Compose not found. Install Docker 24+ with the compose plugin."
+  fi
+}
+
+cmd_health() {
+  url="$BASE_URL/api/public/health"
+  info "GET $url"
+  if ! command -v curl >/dev/null 2>&1; then die "curl is required"; fi
+  body=$(curl -fsS --max-time 10 "$url") || die "health endpoint unreachable"
+  echo "$body"
+  case "$body" in
+    *'"status":"ok"'*) info "healthy" ;;
+    *) die "service reports degraded" ;;
+  esac
+}
+
+cmd_env() {
+  envfile="$APP_DIR/.env"
+  [ -f "$envfile" ] || die "no .env found in $APP_DIR (copy .env.example)"
+  missing=""
+  for key in $REQUIRED_ENV; do
+    val=$(grep -E "^${key}=" "$envfile" | head -n1 | cut -d= -f2- | tr -d '"' | tr -d "'")
+    if [ -z "$val" ]; then
+      missing="$missing $key"
+      echo "MISSING  $key"
+    else
+      echo "ok       $key"
+    fi
+  done
+  [ -z "$missing" ] || die "missing values:$missing"
+  info "environment looks complete"
+}
+
+cmd_up()      { info "starting stack"; compose up -d --build; }
+cmd_down()    { info "stopping stack"; compose down; }
+cmd_restart() { cmd_down; cmd_up; }
+cmd_logs()    { compose logs -f "${1:-app}"; }
+cmd_status()  { compose ps; }
+
+cmd_update() {
+  if [ -d "$APP_DIR/.git" ]; then
+    info "pulling latest code"
+    ( cd "$APP_DIR" && git pull --ff-only )
+  fi
+  cmd_up
+}
+
+usage() {
+  cat <<EOF
+linux-magic-cli $VERSION — manage the farmacoPlants deployment
+
+Usage: linux-magic-cli <command>
+
+Commands:
+  health      Check /api/public/health on the running app
+  env         Verify required variables in .env
+  up          Build and start the stack (docker compose up -d --build)
+  down        Stop the stack
+  restart     Stop, then start again
+  update      git pull (if a repo) then rebuild and start
+  status      Show container status
+  logs [svc]  Follow logs (default service: app)
+  version     Print version
+  help        Show this help
+
+Environment:
+  FARMACOPLANTS_DIR   Project directory (default: current directory)
+  FARMACOPLANTS_URL   Base URL for health checks (default: http://127.0.0.1:3000)
+EOF
+}
+
+case "${1:-help}" in
+  health) cmd_health ;;
+  env) cmd_env ;;
+  up) cmd_up ;;
+  down) cmd_down ;;
+  restart) cmd_restart ;;
+  update) cmd_update ;;
+  status) cmd_status ;;
+  logs) shift; cmd_logs "${1:-app}" ;;
+  version|--version|-v) echo "$VERSION" ;;
+  help|--help|-h) usage ;;
+  *) usage; exit 1 ;;
+esac
