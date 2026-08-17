@@ -16,7 +16,8 @@ container.
 git clone https://github.com/<your-user>/<your-repo>.git farmacoplants
 cd farmacoplants
 cp .env.example .env
-# edit .env with real Supabase keys (service role is server-only, keep it secret)
+# .env.example already contains the real public URL / publishable (anon) keys.
+# The ONLY value you must add is SUPABASE_SERVICE_ROLE_KEY — never commit it.
 ```
 
 ## 3. Build and run
