@@ -118,7 +118,7 @@ function UserManagement() {
             <h1 className="font-display text-3xl font-semibold">Users & profiles</h1>
             <p className="mt-1 text-sm text-muted-foreground">Create accounts, assign access, and control sign-in status.</p>
           </div>
-          <Link to="/admin" className="text-sm text-muted-foreground hover:text-foreground">← Back to curation</Link>
+          <div className="flex gap-3 text-sm"><Link to="/admin/dashboard" className="text-muted-foreground hover:text-foreground">Dashboard</Link><Link to="/admin" className="text-muted-foreground hover:text-foreground">← Back to curation</Link></div>
         </div>
 
         <section className="border-y border-border py-6">

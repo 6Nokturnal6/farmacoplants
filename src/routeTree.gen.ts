@@ -18,6 +18,7 @@ import { Route as SearchRouteImport } from './routes/search'
 import { Route as ActivitiesIndexRouteImport } from './routes/activities.index'
 import { Route as ActivitiesIdRouteImport } from './routes/activities.$id'
 import { Route as AdminAuditRouteImport } from './routes/admin_.audit'
+import { Route as AdminDashboardRouteImport } from './routes/admin_.dashboard'
 import { Route as AdminUsersRouteImport } from './routes/admin_.users'
 import { Route as CitationsIndexRouteImport } from './routes/citations.index'
 import { Route as CompoundsIndexRouteImport } from './routes/compounds.index'
@@ -71,6 +72,11 @@ const AdminAuditRoute = AdminAuditRouteImport.update({
   path: '/admin/audit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminDashboardRoute = AdminDashboardRouteImport.update({
+  id: '/admin_/dashboard',
+  path: '/admin/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/admin_/users',
   path: '/admin/users',
@@ -116,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/activities/$id': typeof ActivitiesIdRoute
   '/admin/audit': typeof AdminAuditRoute
+  '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/users': typeof AdminUsersRoute
   '/compounds/$id': typeof CompoundsIdRoute
   '/plants/$id': typeof PlantsIdRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/activities/$id': typeof ActivitiesIdRoute
   '/admin/audit': typeof AdminAuditRoute
+  '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/users': typeof AdminUsersRoute
   '/compounds/$id': typeof CompoundsIdRoute
   '/plants/$id': typeof PlantsIdRoute
@@ -153,6 +161,7 @@ export interface FileRoutesById {
   '/search': typeof SearchRoute
   '/activities/$id': typeof ActivitiesIdRoute
   '/admin_/audit': typeof AdminAuditRoute
+  '/admin_/dashboard': typeof AdminDashboardRoute
   '/admin_/users': typeof AdminUsersRoute
   '/compounds/$id': typeof CompoundsIdRoute
   '/plants/$id': typeof PlantsIdRoute
@@ -173,6 +182,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/activities/$id'
     | '/admin/audit'
+    | '/admin/dashboard'
     | '/admin/users'
     | '/compounds/$id'
     | '/plants/$id'
@@ -191,6 +201,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/activities/$id'
     | '/admin/audit'
+    | '/admin/dashboard'
     | '/admin/users'
     | '/compounds/$id'
     | '/plants/$id'
@@ -209,6 +220,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/activities/$id'
     | '/admin_/audit'
+    | '/admin_/dashboard'
     | '/admin_/users'
     | '/compounds/$id'
     | '/plants/$id'
@@ -228,6 +240,7 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   ActivitiesIdRoute: typeof ActivitiesIdRoute
   AdminAuditRoute: typeof AdminAuditRoute
+  AdminDashboardRoute: typeof AdminDashboardRoute
   AdminUsersRoute: typeof AdminUsersRoute
   CompoundsIdRoute: typeof CompoundsIdRoute
   PlantsIdRoute: typeof PlantsIdRoute
@@ -303,6 +316,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAuditRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin_/dashboard': {
+      id: '/admin_/dashboard'
+      path: '/admin/dashboard'
+      fullPath: '/admin/dashboard'
+      preLoaderRoute: typeof AdminDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin_/users': {
       id: '/admin_/users'
       path: '/admin/users'
@@ -364,6 +384,7 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   ActivitiesIdRoute: ActivitiesIdRoute,
   AdminAuditRoute: AdminAuditRoute,
+  AdminDashboardRoute: AdminDashboardRoute,
   AdminUsersRoute: AdminUsersRoute,
   CompoundsIdRoute: CompoundsIdRoute,
   PlantsIdRoute: PlantsIdRoute,
