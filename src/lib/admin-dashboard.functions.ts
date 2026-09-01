@@ -45,14 +45,14 @@ export const getAdminOverview = createServerFn({ method: "GET" })
     const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
     const { data: recentAudit } = await supabaseAdmin
       .from("admin_audit_log")
-      .select("id, table_name, action, changed_at, actor_email")
-      .order("changed_at", { ascending: false })
+      .select("id, table_name, action, created_at, actor_email")
+      .order("created_at", { ascending: false })
       .limit(8);
 
     const { count: auditWeek } = await supabaseAdmin
       .from("admin_audit_log")
       .select("*", { count: "exact", head: true })
-      .gte("changed_at", new Date(sevenDaysAgo).toISOString());
+      .gte("created_at", new Date(sevenDaysAgo).toISOString());
 
     return {
       catalog: counts,
@@ -72,7 +72,7 @@ export const getAdminOverview = createServerFn({ method: "GET" })
           id: row.id,
           table: row.table_name,
           action: row.action,
-          at: row.changed_at,
+          at: row.created_at,
           actor: row.actor_email ?? "system",
         })),
       },
