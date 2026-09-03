@@ -9,10 +9,10 @@ import { getPublicSiteUrl } from "@/lib/public-site-url";
 import unilurioLogo from "@/assets/unilurio-logo.jpg";
 
 export const Route = createFileRoute("/login")({
-  validateSearch: (search: Record<string, unknown>) => {
+  validateSearch: (search: Record<string, unknown>): { redirect?: string } => {
     const raw = typeof search['redirect'] === "string" ? (search['redirect'] as string) : "";
     // only same-origin absolute paths are allowed
-    return { redirect: raw.startsWith("/") && !raw.startsWith("//") ? raw : "" };
+    return raw.startsWith("/") && !raw.startsWith("//") ? { redirect: raw } : {};
   },
   head: () => ({ meta: [
     { title: "Sign in — FarmacoPlants" },

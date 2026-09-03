@@ -24,7 +24,7 @@ function Admin() {
     supabase.auth.getSession().then(({ data }) => {
       const uid = data.session?.user?.id ?? null;
       setUserId(uid);
-      if (!uid) navigate({ to: "/login" });
+      if (!uid) navigate({ to: "/login", search: { redirect: "/admin" } });
     });
   }, [navigate]);
 
