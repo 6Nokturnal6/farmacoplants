@@ -56,7 +56,7 @@ function UserManagement() {
     supabase.auth.getUser().then(({ data }) => {
       const id = data.user?.id ?? null;
       setCurrentUserId(id);
-      if (!id) navigate({ to: "/login" });
+      if (!id) navigate({ to: "/login", search: { redirect: "/admin/users" } });
     });
   }, [navigate]);
 

@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -66,25 +66,49 @@ function StatCard({ label, value, hint }: { label: string; value: number | strin
 }
 
 function AdminDashboard() {
-  const navigate = useNavigate();
   const overviewFn = useServerFn(getAdminOverview);
   const [userId, setUserId] = useState<string | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      const id = data.user?.id ?? null;
-      setUserId(id);
-      if (!id) navigate({ to: "/login" });
+      setUserId(data.user?.id ?? null);
+      setAuthChecked(true);
     });
-  }, [navigate]);
+  }, []);
 
   const overview = useQuery({
     queryKey: ["admin-overview"],
     queryFn: () => overviewFn(),
     enabled: Boolean(userId),
+    retry: false,
   });
 
   const data = overview.data;
+  const forbidden = /forbidden/i.test(overview.error?.message ?? "");
+
+  if (authChecked && !userId) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 grid place-items-center px-4 py-16 text-center">
+          <div className="max-w-sm">
+            <ShieldCheck className="mx-auto h-8 w-8 text-muted-foreground" />
+            <h1 className="mt-4 font-display text-2xl font-semibold">Admin sign-in required</h1>
+            <p className="mt-2 text-sm text-muted-foreground">Sign in with your own account to manage users, roles and access levels.</p>
+            <Link
+              to="/login"
+              search={{ redirect: "/admin/dashboard" }}
+              className="mt-6 inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Sign in
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -102,8 +126,13 @@ function AdminDashboard() {
           </nav>
         </div>
 
-        {overview.isLoading && <p className="mt-8 text-sm text-muted-foreground">Loading dashboard…</p>}
-        {overview.error && <p className="mt-8 text-sm text-destructive">{overview.error.message}</p>}
+        {(overview.isLoading || !authChecked) && <p className="mt-8 text-sm text-muted-foreground">Loading dashboard…</p>}
+        {overview.error && (
+          <p className="mt-8 text-sm text-destructive">
+            {forbidden ? "Your account does not have admin access. Ask an existing admin to grant you the admin role." : overview.error.message}
+          </p>
+        )}
+
 
         {data && (
           <>
