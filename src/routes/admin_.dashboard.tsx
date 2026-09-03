@@ -70,8 +70,11 @@ function StatCard({ label, value, hint }: { label: string; value: number | strin
 
 function AdminDashboard() {
   const overviewFn = useServerFn(getAdminOverview);
+  const listUsers = useServerFn(listAdminUsers);
+  const sendReset = useServerFn(sendAdminPasswordReset);
   const [userId, setUserId] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -85,6 +88,19 @@ function AdminDashboard() {
     queryFn: () => overviewFn(),
     enabled: Boolean(userId),
     retry: false,
+  });
+
+  const usersQuery = useQuery({
+    queryKey: ["admin-users"],
+    queryFn: () => listUsers(),
+    enabled: Boolean(userId) && Boolean(overview.data),
+    retry: false,
+  });
+
+  const resetMutation = useMutation({
+    mutationFn: (user: { id: string }) => sendReset({ data: { id: user.id, redirectTo: `${getPublicSiteUrl()}/reset-password` } }),
+    onSuccess: (result) => setResetMessage(`Password reset email sent to ${result.email}.`),
+    onError: (error) => setResetMessage(error.message),
   });
 
   const data = overview.data;
