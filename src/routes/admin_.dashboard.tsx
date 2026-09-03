@@ -199,6 +199,46 @@ function AdminDashboard() {
               </div>
             </section>
 
+            <section className="mt-10">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-lg font-semibold flex items-center gap-2"><KeyRound className="h-5 w-5" /> Password resets</h2>
+                <Link to="/admin/users" className="text-sm underline text-muted-foreground hover:text-foreground">Manage users →</Link>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">Send a fresh password reset email to any account. The link lets the user choose a new password.</p>
+              {resetMessage && <p className="mt-3 text-sm text-muted-foreground" role="status">{resetMessage}</p>}
+              <div className="mt-4 overflow-x-auto border-y border-border">
+                <table className="w-full text-sm">
+                  <thead className="text-left text-xs uppercase text-muted-foreground">
+                    <tr><th className="py-3 pr-4">User</th><th className="py-3 pr-4">Role</th><th className="py-3 pr-4">Status</th><th className="py-3 text-right">Action</th></tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {usersQuery.data?.map((user) => (
+                      <tr key={user.id}>
+                        <td className="py-3 pr-4"><div className="font-medium">{user.displayName || "Unnamed user"}</div><div className="text-xs text-muted-foreground">{user.email}</div></td>
+                        <td className="py-3 pr-4 capitalize">{user.role}</td>
+                        <td className="py-3 pr-4"><span className={user.active ? "text-primary" : "text-destructive"}>{user.active ? "Active" : "Deactivated"}</span></td>
+                        <td className="py-3 text-right">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={resetMutation.isPending || !user.active}
+                            title={!user.active ? "Reactivate the account before sending a reset" : undefined}
+                            onClick={() => { setResetMessage(null); resetMutation.mutate(user); }}
+                          >
+                            {resetMutation.isPending && resetMutation.variables?.id === user.id ? "Sending…" : "Send reset email"}
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                    {usersQuery.data?.length === 0 && (
+                      <tr><td colSpan={4} className="py-4 text-sm text-muted-foreground">No users found.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
             <section className="mt-10 mb-4">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-lg font-semibold flex items-center gap-2"><Activity className="h-5 w-5" /> Recent admin activity</h2>
