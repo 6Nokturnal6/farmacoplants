@@ -1,12 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { Activity, Database, ShieldCheck, Users } from "lucide-react";
+import { Activity, Database, KeyRound, ShieldCheck, Users } from "lucide-react";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { getPublicSiteUrl } from "@/lib/public-site-url";
 import { getAdminOverview } from "@/lib/admin-dashboard.functions";
+import { listAdminUsers, sendAdminPasswordReset } from "@/lib/admin-users.functions";
 
 export const Route = createFileRoute("/admin_/dashboard")({
   head: () => ({
