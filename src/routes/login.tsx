@@ -9,6 +9,11 @@ import { getPublicSiteUrl } from "@/lib/public-site-url";
 import unilurioLogo from "@/assets/unilurio-logo.jpg";
 
 export const Route = createFileRoute("/login")({
+  validateSearch: (search: Record<string, unknown>) => {
+    const raw = typeof search['redirect'] === "string" ? (search['redirect'] as string) : "";
+    // only same-origin absolute paths are allowed
+    return { redirect: raw.startsWith("/") && !raw.startsWith("//") ? raw : "" };
+  },
   head: () => ({ meta: [
     { title: "Sign in — FarmacoPlants" },
     { name: "description", content: "Sign in to curate the FarmacoPlants natural products database." },
@@ -19,6 +24,7 @@ export const Route = createFileRoute("/login")({
   ] }),
   component: Login,
 });
+
 
 function Login() {
   const navigate = useNavigate();
