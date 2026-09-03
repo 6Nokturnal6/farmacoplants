@@ -55,7 +55,7 @@ function Login() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
-      navigate({ to: "/" });
+      navigate({ to: redirect || "/" });
     } catch (err) {
       setError(friendlyAuthError(err));
     } finally {
