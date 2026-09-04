@@ -44,7 +44,7 @@ const ACCESS_LEVELS = [
   {
     role: "Curator",
     scope: "Content only",
-    detail: "Signed-in contributor role reserved for catalogue curation. No user management and no audit-log access.",
+    detail: "Can add and edit plants, compounds, activities, citations and their links. Cannot delete records, manage users, or read the audit log.",
   },
   {
     role: "User",
