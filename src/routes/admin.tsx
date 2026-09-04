@@ -70,9 +70,9 @@ function Admin() {
             <p className="text-muted-foreground mt-2">Create, edit and delete records.</p>
           </div>
           <div className="flex items-center gap-3 shrink-0 mt-2">
-            <Link to="/admin/dashboard" className="text-sm underline text-muted-foreground hover:text-foreground">Dashboard</Link>
-            <Link to="/admin/users" className="inline-flex items-center gap-1.5 text-sm underline text-muted-foreground hover:text-foreground"><Users className="h-4 w-4" /> Users</Link>
-            <Link to="/admin/audit" className="text-sm underline text-muted-foreground hover:text-foreground">Audit log →</Link>
+            {isAdmin && <Link to="/admin/dashboard" className="text-sm underline text-muted-foreground hover:text-foreground">Dashboard</Link>}
+            {isAdmin && <Link to="/admin/users" className="inline-flex items-center gap-1.5 text-sm underline text-muted-foreground hover:text-foreground"><Users className="h-4 w-4" /> Users</Link>}
+            {isAdmin && <Link to="/admin/audit" className="text-sm underline text-muted-foreground hover:text-foreground">Audit log →</Link>}
           </div>
         </div>
 
