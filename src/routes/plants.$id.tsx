@@ -6,7 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { PlantImage } from "@/lib/plant-image";
 import { fetchPlantProfile, downloadPlantPdf, downloadPlantBibtex } from "@/lib/plant-export";
 import { useState } from "react";
-import { Download, FileText } from "lucide-react";
+import { Download, FileText, Pencil } from "lucide-react";
+import { useCatalogRole } from "@/hooks/useCatalogRole";
 
 export const Route = createFileRoute("/plants/$id")({
   head: () => ({ meta: [{ title: "Plant — FarmacoPlants" }] }),
@@ -140,5 +141,19 @@ function ExportButtons({ plantId }: { plantId: string }) {
         <Download className="h-4 w-4" />{busy === "bib" ? "Preparing…" : "References (BibTeX)"}
       </button>
     </div>
+  );
+}
+
+function EditLink({ plantId }: { plantId: string }) {
+  const { canWrite } = useCatalogRole();
+  if (!canWrite) return null;
+  return (
+    <Link
+      to="/plants/$id/edit"
+      params={{ id: plantId }}
+      className="inline-flex items-center gap-2 px-3 py-1.5 mt-4 text-sm rounded-md border border-primary/40 text-primary bg-primary/5 hover:bg-primary/10 transition-colors"
+    >
+      <Pencil className="h-4 w-4" /> Edit plant
+    </Link>
   );
 }
