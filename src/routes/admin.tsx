@@ -18,6 +18,7 @@ function Admin() {
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [canCurate, setCanCurate] = useState<boolean | null>(null);
   const [tab, setTab] = useState<Tab>("compound");
 
   useEffect(() => {
@@ -30,20 +31,20 @@ function Admin() {
 
   useEffect(() => {
     if (!userId) return;
-    supabase.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle()
-      .then(({ data }) => setIsAdmin(!!data));
+    supabase.from("user_roles").select("role").eq("user_id", userId).in("role", ["admin", "curator"]).maybeSingle()
+      .then(({ data }) => { setCanCurate(!!data); setIsAdmin(data?.role === "admin"); });
   }, [userId]);
 
   if (!userId) return null;
-  if (isAdmin === null) return <div className="p-10 text-center text-muted-foreground">Checking access…</div>;
-  if (!isAdmin) {
+  if (canCurate === null) return <div className="p-10 text-center text-muted-foreground">Checking access…</div>;
+  if (!canCurate) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-1 grid place-items-center px-4">
           <div className="max-w-md text-center">
-            <h1 className="font-display text-2xl font-semibold">Admin access required</h1>
-            <p className="text-sm text-muted-foreground mt-2">Your account ({userId.slice(0, 8)}…) is signed in but does not have the <code className="text-foreground">admin</code> role.</p>
+            <h1 className="font-display text-2xl font-semibold">Curation access required</h1>
+            <p className="text-sm text-muted-foreground mt-2">Your account ({userId.slice(0, 8)}…) is signed in but does not have the <code className="text-foreground">admin</code> or <code className="text-foreground">curator</code> role.</p>
           </div>
         </main>
         <Footer />
