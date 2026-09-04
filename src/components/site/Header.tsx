@@ -1,25 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useCatalogRole } from "@/hooks/useCatalogRole";
 import unilurioLogo from "@/assets/unilurio-logo.jpg";
 
 export function Header() {
-  const [userId, setUserId] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { userId, canWrite } = useCatalogRole();
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
-      setUserId(session?.user?.id ?? null);
-    });
-    supabase.auth.getSession().then(({ data }) => setUserId(data.session?.user?.id ?? null));
-    return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (!userId) { setIsAdmin(false); return; }
-    supabase.from("user_roles").select("role").eq("user_id", userId).eq("role", "admin").maybeSingle()
-      .then(({ data }) => setIsAdmin(!!data));
-  }, [userId]);
 
   const linkCls = "text-sm font-medium text-foreground/70 hover:text-primary transition-colors";
 
