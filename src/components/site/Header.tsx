@@ -28,9 +28,10 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
-          {isAdmin && (
+          {canWrite && (
             <Link to="/admin" className="text-sm font-medium text-accent-foreground bg-accent/80 hover:bg-accent px-3 py-1.5 rounded-md">
-              Admin
+              Curation
+
             </Link>
           )}
           {userId ? (
