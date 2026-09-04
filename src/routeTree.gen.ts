@@ -26,6 +26,7 @@ import { Route as CompoundsIdRouteImport } from './routes/compounds.$id'
 import { Route as PlantsIndexRouteImport } from './routes/plants.index'
 import { Route as PlantsIdRouteImport } from './routes/plants.$id'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
+import { Route as PlantsIdEditRouteImport } from './routes/plants_.$id_.edit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -112,6 +113,11 @@ const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
   path: '/api/public/health',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlantsIdEditRoute = PlantsIdEditRouteImport.update({
+  id: '/plants_/$id_/edit',
+  path: '/plants/$id/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/compounds/': typeof CompoundsIndexRoute
   '/plants/': typeof PlantsIndexRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/plants/$id/edit': typeof PlantsIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -150,6 +157,7 @@ export interface FileRoutesByTo {
   '/compounds': typeof CompoundsIndexRoute
   '/plants': typeof PlantsIndexRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/plants/$id/edit': typeof PlantsIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -170,6 +178,7 @@ export interface FileRoutesById {
   '/compounds/': typeof CompoundsIndexRoute
   '/plants/': typeof PlantsIndexRoute
   '/api/public/health': typeof ApiPublicHealthRoute
+  '/plants_/$id_/edit': typeof PlantsIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -191,6 +200,7 @@ export interface FileRouteTypes {
     | '/compounds/'
     | '/plants/'
     | '/api/public/health'
+    | '/plants/$id/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -210,6 +220,7 @@ export interface FileRouteTypes {
     | '/compounds'
     | '/plants'
     | '/api/public/health'
+    | '/plants/$id/edit'
   id:
     | '__root__'
     | '/'
@@ -229,6 +240,7 @@ export interface FileRouteTypes {
     | '/compounds/'
     | '/plants/'
     | '/api/public/health'
+    | '/plants_/$id_/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -249,6 +261,7 @@ export interface RootRouteChildren {
   CompoundsIndexRoute: typeof CompoundsIndexRoute
   PlantsIndexRoute: typeof PlantsIndexRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
+  PlantsIdEditRoute: typeof PlantsIdEditRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -372,6 +385,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/plants_/$id_/edit': {
+      id: '/plants_/$id_/edit'
+      path: '/plants/$id/edit'
+      fullPath: '/plants/$id/edit'
+      preLoaderRoute: typeof PlantsIdEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -393,6 +413,7 @@ const rootRouteChildren: RootRouteChildren = {
   CompoundsIndexRoute: CompoundsIndexRoute,
   PlantsIndexRoute: PlantsIndexRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
+  PlantsIdEditRoute: PlantsIdEditRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
