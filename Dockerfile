@@ -1,8 +1,9 @@
 FROM node:22 AS builder
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package.json ./
+# package.json is the source of truth; a lockfile can go stale, so resolve fresh
+RUN npm install --no-audit --no-fund
 
 COPY . .
 
