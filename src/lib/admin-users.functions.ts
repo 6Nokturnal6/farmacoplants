@@ -2,36 +2,22 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+type AdminUser = {
+  id: string; email: string; displayName: string; role: "admin" | "curator" | "user";
+  active: boolean; createdAt: string; lastSignInAt: string | null;
+};
+
+async function ensureAdmin(context: { supabase: any; userId: string }) {
+  const { data: isAdmin, error } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+  if (error || !isAdmin) throw new Error("Forbidden");
+  return import("./admin-ops.server");
+}
+
 export const listAdminUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: isAdmin, error: roleError } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (roleError || !isAdmin) throw new Error("Forbidden");
-
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    if (authError) throw authError;
-
-    const ids = authData.users.map((user) => user.id);
-    const [{ data: profiles, error: profileError }, { data: roles, error: rolesError }] = await Promise.all([
-      ids.length ? supabaseAdmin.from("profiles").select("id, email, display_name").in("id", ids) : Promise.resolve({ data: [], error: null }),
-      ids.length ? supabaseAdmin.from("user_roles").select("user_id, role").in("user_id", ids) : Promise.resolve({ data: [], error: null }),
-    ]);
-    if (profileError) throw profileError;
-    if (rolesError) throw rolesError;
-
-    return authData.users.map((user) => ({
-      id: user.id,
-      email: user.email ?? profiles?.find((profile) => profile.id === user.id)?.email ?? "",
-      displayName: profiles?.find((profile) => profile.id === user.id)?.display_name ?? "",
-      role: roles?.find((role) => role.user_id === user.id)?.role ?? "user",
-      active: !user.banned_until || new Date(user.banned_until).getTime() <= Date.now(),
-      createdAt: user.created_at,
-      lastSignInAt: user.last_sign_in_at ?? null,
-    }));
+    const { runAdminOp } = await ensureAdmin(context);
+    return (await runAdminOp("listUsers", {}, context.userId)) as AdminUser[];
   });
 
 export const createAdminUser = createServerFn({ method: "POST" })
@@ -43,31 +29,8 @@ export const createAdminUser = createServerFn({ method: "POST" })
     role: z.enum(["admin", "curator", "user"]),
   }))
   .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
-    if (!isAdmin) throw new Error("Forbidden");
-
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email.toLowerCase(),
-      password: data.password,
-      email_confirm: true,
-      user_metadata: { display_name: data.displayName },
-    });
-    if (createError) throw createError;
-    if (!created.user) throw new Error("User creation failed");
-
-    const { error: profileError } = await supabaseAdmin.from("profiles").upsert({
-      id: created.user.id,
-      email: data.email.toLowerCase(),
-      display_name: data.displayName,
-    });
-    if (profileError) throw profileError;
-
-    const { error: clearRoleError } = await supabaseAdmin.from("user_roles").delete().eq("user_id", created.user.id);
-    if (clearRoleError) throw clearRoleError;
-    const { error: roleError } = await supabaseAdmin.from("user_roles").insert({ user_id: created.user.id, role: data.role });
-    if (roleError) throw roleError;
-    return { id: created.user.id };
+    const { runAdminOp } = await ensureAdmin(context);
+    return (await runAdminOp("createUser", data, context.userId)) as { id: string };
   });
 
 export const updateAdminUser = createServerFn({ method: "POST" })
@@ -79,52 +42,14 @@ export const updateAdminUser = createServerFn({ method: "POST" })
     active: z.boolean(),
   }))
   .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
-    if (!isAdmin) throw new Error("Forbidden");
-    if (data.id === context.userId && (!data.active || data.role !== "admin")) {
-      throw new Error("You cannot deactivate or remove your own admin access.");
-    }
-
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(data.id, {
-      ban_duration: data.active ? "none" : "876000h",
-      user_metadata: { display_name: data.displayName },
-    });
-    if (authError) throw authError;
-
-    const { error: profileError } = await supabaseAdmin.from("profiles").update({ display_name: data.displayName }).eq("id", data.id);
-    if (profileError) throw profileError;
-    const { error: clearRoleError } = await supabaseAdmin.from("user_roles").delete().eq("user_id", data.id);
-    if (clearRoleError) throw clearRoleError;
-    const { error: roleError } = await supabaseAdmin.from("user_roles").insert({ user_id: data.id, role: data.role });
-    if (roleError) throw roleError;
-    return { ok: true };
+    const { runAdminOp } = await ensureAdmin(context);
+    return (await runAdminOp("updateUser", data, context.userId)) as { ok: boolean };
   });
 
 export const sendAdminPasswordReset = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(z.object({
-    id: z.string().uuid(),
-    redirectTo: z.string().url().max(500),
-  }))
+  .inputValidator(z.object({ id: z.string().uuid(), redirectTo: z.string().url().max(500) }))
   .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
-    if (!isAdmin) throw new Error("Forbidden");
-
-    const redirect = new URL(data.redirectTo);
-    if (redirect.pathname !== "/reset-password") throw new Error("Invalid redirect target");
-
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: target, error: targetError } = await supabaseAdmin.auth.admin.getUserById(data.id);
-    if (targetError) throw targetError;
-    const email = target.user?.email;
-    if (!email) throw new Error("This account has no email address.");
-
-    const { createClient } = await import("@supabase/supabase-js");
-    const publicClient = createClient(process.env["SUPABASE_URL"]!, process.env["SUPABASE_PUBLISHABLE_KEY"]!, {
-      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-    });
-    const { error } = await publicClient.auth.resetPasswordForEmail(email, { redirectTo: redirect.toString() });
-    if (error) throw error;
-    return { email };
+    const { runAdminOp } = await ensureAdmin(context);
+    return (await runAdminOp("sendReset", data, context.userId)) as { email: string };
   });
