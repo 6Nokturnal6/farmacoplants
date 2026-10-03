@@ -25,6 +25,7 @@ import { Route as CompoundsIndexRouteImport } from './routes/compounds.index'
 import { Route as CompoundsIdRouteImport } from './routes/compounds.$id'
 import { Route as PlantsIndexRouteImport } from './routes/plants.index'
 import { Route as PlantsIdRouteImport } from './routes/plants.$id'
+import { Route as ApiPublicAdminOpsRouteImport } from './routes/api/public/admin-ops'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as PlantsIdEditRouteImport } from './routes/plants_.$id_.edit'
 
@@ -108,6 +109,11 @@ const PlantsIdRoute = PlantsIdRouteImport.update({
   path: '/plants/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicAdminOpsRoute = ApiPublicAdminOpsRouteImport.update({
+  id: '/api/public/admin-ops',
+  path: '/api/public/admin-ops',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
   id: '/api/public/health',
   path: '/api/public/health',
@@ -136,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/citations/': typeof CitationsIndexRoute
   '/compounds/': typeof CompoundsIndexRoute
   '/plants/': typeof PlantsIndexRoute
+  '/api/public/admin-ops': typeof ApiPublicAdminOpsRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/plants/$id/edit': typeof PlantsIdEditRoute
 }
@@ -156,6 +163,7 @@ export interface FileRoutesByTo {
   '/citations': typeof CitationsIndexRoute
   '/compounds': typeof CompoundsIndexRoute
   '/plants': typeof PlantsIndexRoute
+  '/api/public/admin-ops': typeof ApiPublicAdminOpsRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/plants/$id/edit': typeof PlantsIdEditRoute
 }
@@ -177,6 +185,7 @@ export interface FileRoutesById {
   '/citations/': typeof CitationsIndexRoute
   '/compounds/': typeof CompoundsIndexRoute
   '/plants/': typeof PlantsIndexRoute
+  '/api/public/admin-ops': typeof ApiPublicAdminOpsRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/plants_/$id_/edit': typeof PlantsIdEditRoute
 }
@@ -199,6 +208,7 @@ export interface FileRouteTypes {
     | '/citations/'
     | '/compounds/'
     | '/plants/'
+    | '/api/public/admin-ops'
     | '/api/public/health'
     | '/plants/$id/edit'
   fileRoutesByTo: FileRoutesByTo
@@ -219,6 +229,7 @@ export interface FileRouteTypes {
     | '/citations'
     | '/compounds'
     | '/plants'
+    | '/api/public/admin-ops'
     | '/api/public/health'
     | '/plants/$id/edit'
   id:
@@ -239,6 +250,7 @@ export interface FileRouteTypes {
     | '/citations/'
     | '/compounds/'
     | '/plants/'
+    | '/api/public/admin-ops'
     | '/api/public/health'
     | '/plants_/$id_/edit'
   fileRoutesById: FileRoutesById
@@ -260,6 +272,7 @@ export interface RootRouteChildren {
   CitationsIndexRoute: typeof CitationsIndexRoute
   CompoundsIndexRoute: typeof CompoundsIndexRoute
   PlantsIndexRoute: typeof PlantsIndexRoute
+  ApiPublicAdminOpsRoute: typeof ApiPublicAdminOpsRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   PlantsIdEditRoute: typeof PlantsIdEditRoute
 }
@@ -378,6 +391,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlantsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/admin-ops': {
+      id: '/api/public/admin-ops'
+      path: '/api/public/admin-ops'
+      fullPath: '/api/public/admin-ops'
+      preLoaderRoute: typeof ApiPublicAdminOpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/health': {
       id: '/api/public/health'
       path: '/api/public/health'
@@ -412,6 +432,7 @@ const rootRouteChildren: RootRouteChildren = {
   CitationsIndexRoute: CitationsIndexRoute,
   CompoundsIndexRoute: CompoundsIndexRoute,
   PlantsIndexRoute: PlantsIndexRoute,
+  ApiPublicAdminOpsRoute: ApiPublicAdminOpsRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
   PlantsIdEditRoute: PlantsIdEditRoute,
 }
