@@ -249,3 +249,6 @@ FARMACOPLANTS_DIR=/srv/farmacoplants \
 FARMACOPLANTS_URL=https://farmacoplants.unilurio.ac.mz \
   linux-magic-cli health
 ```
+
+## Admin actions on self-hosted installs
+No service key is needed on your server. Admin actions (users, resets, dashboard) are relayed to the published Lovable Cloud app, which checks the caller is an admin. Publish the Lovable project once so the relay is live. Optional: set ADMIN_RELAY_URL in .env to point elsewhere.
