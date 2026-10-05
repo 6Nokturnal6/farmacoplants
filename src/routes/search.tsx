@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import type { ErrorComponentProps } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { Header } from "@/components/site/Header";
@@ -21,8 +22,10 @@ export const Route = createFileRoute("/search")({
       { name: "description", content: "Search across plants, chemical compounds, and pharmacological activities." },
     ],
   }),
-  errorComponent: ({ error }) => (
-    <div className="p-10 text-sm text-destructive">Search failed: {error.message}</div>
+  errorComponent: ({ error }: ErrorComponentProps) => (
+    <div className="p-10 text-sm text-destructive">
+      Search failed: {error instanceof Error ? error.message : String(error)}
+    </div>
   ),
   notFoundComponent: () => <div className="p-10">Not found.</div>,
   component: SearchPage,
