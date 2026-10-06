@@ -78,7 +78,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <head><HeadContent /></head>
+      <head>
+        {/* Runs before the app loads so the auth client can't strip the reset
+            tokens from the URL first. Sends reset links landing anywhere to the form. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var h=location.hash;if(location.pathname!=="/reset-password"&&/type=recovery|error_description=/.test(h)){location.replace("/reset-password"+h);}}catch(e){}})();`,
+          }}
+        />
+        <HeadContent />
+      </head>
       <body>{children}<Scripts /></body>
     </html>
   );
